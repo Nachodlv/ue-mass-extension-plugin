@@ -1,0 +1,33 @@
+﻿{
+  "FileVersion": 1,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "Mass extension",
+  "Description": "Extension of the mass plugin",
+  "Category": "Gameplay",
+  "CreatedBy": "Ignacio de la Vega",
+  "CreatedByURL": "",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "SupportURL": "",
+  "CanContainContent": true,
+  "IsBetaVersion": false,
+  "IsExperimentalVersion": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "MassReplicationBase",
+      "Type": "Runtime"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "MassEntity",
+      "Enabled": true
+    },
+    {
+      "Name": "MassGameplay",
+      "Enabled": true
+    }
+  ]
+}
