@@ -12,12 +12,11 @@ struct FMRBMassFastArrayItem;
 class FMRBMassClientBubbleHandler : public TClientBubbleHandlerBase<FMRBMassFastArrayItem>
 {
 public:
-	typedef TMassClientBubbleTransformHandler<FMRBMassFastArrayItem> FMassClientBubbleTransformHandler;
-
-	
 #if UE_REPLICATION_COMPILE_SERVER_CODE
+	/** Returns the item containing the agent with given handle */
 	FMRBMassFastArrayItem* GetMutableItem(FMassReplicatedAgentHandle Handle);
 
+	/** Marks the given item as modified so it replicates its changes to th client */
 	void MarkItemDirty(FMRBMassFastArrayItem & Item) const;
 #endif // UE_REPLICATION_COMPILE_SERVER_CODE
 
@@ -48,17 +47,18 @@ public:
 		Bubble.Initialize(Entities, *this);
 	}
 
+	/** Define a custom replication for this struct */
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
 	{
 		return FFastArraySerializer::FastArrayDeltaSerialize<FMRBMassFastArrayItem, FMRBMassClientBubbleSerializer>(Entities, DeltaParams, *this);
 	}
 
+	/** The one responsible of storing the server data in the client fragments */
 	FMRBMassClientBubbleHandler Bubble;
 
 protected:
 	/** Fast Array of Agents for efficient replication. Maintained as a freelist on the server, to keep index consistency as indexes are used as Handles into the Array 
-	 *  Note array order is not guaranteed between server and client so handles will not be consistent between them, FMassNetworkID will be.
-	 */
+	 *  Note array order is not guaranteed between server and client so handles will not be consistent between them, FMassNetworkID will be.*/
 	UPROPERTY(Transient)
 	TArray<FMRBMassFastArrayItem> Entities;
 };
@@ -68,7 +68,10 @@ struct TStructOpsTypeTraits<FMRBMassClientBubbleSerializer> : public TStructOpsT
 {
 	enum
 	{
+		// We need to use the NetDeltaSerialize function for this struct to define a custom replication
 		WithNetDeltaSerializer = true,
+
+		// Copy is not allowed for this struct
 		WithCopy = false,
 	};
 };
@@ -86,9 +89,11 @@ public:
 	FMRBMassClientBubbleSerializer& GetBubbleSerializer() { return BubbleSerializer; }
 
 protected:
+	/**  */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
+	/** Contains the entities fast array */
 	UPROPERTY(Replicated, Transient) 
 	FMRBMassClientBubbleSerializer BubbleSerializer;
 };
