@@ -6,6 +6,7 @@
 
 // MRB Includes
 #include "..\Public\MRBMassFastArray.h"
+#include "Net/Serialization/FastArraySerializer.h"
 
 #if UE_REPLICATION_COMPILE_SERVER_CODE
 
@@ -53,16 +54,24 @@ void FMRBMassClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> Adde
 		TransformFragments[EntityIdx].GetMutableTransform().SetLocation(ReplicatedEntity.GetEntityLocation());
 	};
 
+	auto PostReplicatedChange = [this](const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item)
+	{
+		PostReplicatedChangeEntity(EntityView, Item);
+	};
+
 	// PostReplicatedChangeEntity is called when there are multiples adds without a remove so it's treated as a change
-	PostReplicatedAddHelper(AddedIndices, AddRequirementsForSpawnQuery, CacheFragmentViewsForSpawnQuery, SetSpawnedEntityData, PostReplicatedChangeEntity);
+	PostReplicatedAddHelper(AddedIndices, AddRequirementsForSpawnQuery, CacheFragmentViewsForSpawnQuery, SetSpawnedEntityData, PostReplicatedChange);
 }
 
 void FMRBMassClientBubbleHandler::PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize)
 {
-	PostReplicatedChangeHelper(ChangedIndices, PostReplicatedChangeEntity);
+	PostReplicatedChangeHelper(ChangedIndices, [this](const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item)
+	{
+		PostReplicatedChangeEntity(EntityView, Item);
+	});
 }
 
-void FMRBMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item)
+void FMRBMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item) const
 {
 	// Grabs the transform fragment from the entity
 	FTransformFragment& TransformFragment = EntityView.GetFragmentData<FTransformFragment>();
@@ -72,6 +81,11 @@ void FMRBMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityVi
 }
 
 #endif //UE_REPLICATION_COMPILE_CLIENT_CODE
+
+bool FMRBMassClientBubbleSerializer::NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
+{
+	return FFastArraySerializer::FastArrayDeltaSerialize<FMRBMassFastArrayItem, FMRBMassClientBubbleSerializer>(Entities, DeltaParams, *this);
+}
 
 AMRBMassClientBubbleInfo::AMRBMassClientBubbleInfo(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

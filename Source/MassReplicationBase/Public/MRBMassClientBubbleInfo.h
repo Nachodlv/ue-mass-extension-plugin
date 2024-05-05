@@ -1,7 +1,9 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "MassClientBubbleHandler.h"
 #include "MassClientBubbleInfoBase.h"
+#include "MassClientBubbleSerializerBase.h"
 #include "MRBMassFastArray.h"
 
 #include "MRBMassClientBubbleInfo.generated.h"
@@ -25,7 +27,7 @@ protected:
 	virtual void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize) override;
 	virtual void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize) override;
 
-	static void PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item);
+	virtual void PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item) const;
 #endif //UE_REPLICATION_COMPILE_CLIENT_CODE
 
 #if WITH_MASSGAMEPLAY_DEBUG && WITH_EDITOR
@@ -48,10 +50,7 @@ public:
 	}
 
 	/** Define a custom replication for this struct */
-	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
-	{
-		return FFastArraySerializer::FastArrayDeltaSerialize<FMRBMassFastArrayItem, FMRBMassClientBubbleSerializer>(Entities, DeltaParams, *this);
-	}
+	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams);
 
 	/** The one responsible of storing the server data in the client fragments */
 	FMRBMassClientBubbleHandler Bubble;
@@ -82,14 +81,12 @@ class AMRBMassClientBubbleInfo : public AMassClientBubbleInfoBase
 {
 	GENERATED_BODY()
 
-	
 public:
 	AMRBMassClientBubbleInfo(const FObjectInitializer& ObjectInitializer);
 
 	FMRBMassClientBubbleSerializer& GetBubbleSerializer() { return BubbleSerializer; }
 
 protected:
-	/**  */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:

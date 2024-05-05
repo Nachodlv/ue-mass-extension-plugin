@@ -23,7 +23,7 @@ public class MassReplicationBase : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"StructUtils",
-			"DeveloperSettings" 
+			"DeveloperSettings"
 		});
 	}
 }
