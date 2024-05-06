@@ -37,7 +37,7 @@ void FMRBMassClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> Adde
 	// Add the requirements for the query used to grab all the transform fragments
 	auto AddRequirementsForSpawnQuery = [this](FMassEntityQuery& InQuery)
 	{
-		InQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
+		AddQueryRequirements(InQuery);
 	};
 
 	// Cache the transform fragments
@@ -78,6 +78,11 @@ void FMRBMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityVi
 
 	// Sets the transform location with the agent location
 	TransformFragment.GetMutableTransform().SetLocation(Item.GetEntityLocation());
+}
+
+void FMRBMassClientBubbleHandler::AddQueryRequirements(FMassEntityQuery& InQuery) const
+{
+	InQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
 }
 
 #endif //UE_REPLICATION_COMPILE_CLIENT_CODE

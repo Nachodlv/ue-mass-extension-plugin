@@ -10,11 +10,12 @@ public class MassReplicationBase : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
+			"NetCore",
+			"MassReplication",
 			"MassEntity",
 			"MassCommon",
-			"MassReplication",
 			"MassSpawner",
-			"NetCore",
+			"MassMovement"
 		});
 
 		PublicDependencyModuleNames.AddRange(new string[]
@@ -23,7 +24,7 @@ public class MassReplicationBase : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"StructUtils",
-			"DeveloperSettings"
+			"DeveloperSettings",
 		});
 	}
 }

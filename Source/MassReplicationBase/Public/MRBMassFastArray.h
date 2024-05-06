@@ -21,7 +21,7 @@ private:
 
 /** Fast array item for efficient agent replication. Remember to make this dirty if any FReplicatedCrowdAgent member variables are modified */
 USTRUCT()
-struct FMRBMassFastArrayItem : public FMassFastArrayItemBase
+struct MASSREPLICATIONBASE_API FMRBMassFastArrayItem : public FMassFastArrayItemBase
 {
 	GENERATED_BODY()
 

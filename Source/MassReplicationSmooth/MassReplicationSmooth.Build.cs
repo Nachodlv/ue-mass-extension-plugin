@@ -10,7 +10,6 @@ public class MassReplicationSmooth : ModuleRules
             new string[]
             {
                 "Core", 
-                "MassEntity", 
             }
         );
 
@@ -22,6 +21,11 @@ public class MassReplicationSmooth : ModuleRules
                 "Slate",
                 "SlateCore",
                 "NetCore",
+                "MassReplicationBase",
+                "MassEntity",
+                "MassReplication",
+                "MassRepresentation",
+                "MassCommon"
             }
         );
     }
