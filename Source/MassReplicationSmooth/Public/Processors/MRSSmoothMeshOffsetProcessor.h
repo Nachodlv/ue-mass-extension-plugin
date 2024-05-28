@@ -25,7 +25,7 @@ private:
 
 /** Overrides the ISM processor to add a dynamic offset to the static mesh */
 UCLASS()
-class UUSMassUpdateISMProcessor : public UMassUpdateISMProcessor
+class UMRSMassUpdateISMProcessor : public UMassUpdateISMProcessor
 {
 	GENERATED_BODY()
 

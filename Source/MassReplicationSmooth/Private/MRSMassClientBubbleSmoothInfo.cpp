@@ -13,9 +13,9 @@ void FMRSMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityVi
 	const FVector NewLocation = TransformFragment.GetTransform().GetLocation();
 
 	// Offsetting the mesh to sync with the sever locations smoothly
-	constexpr float MaxSmoothNetUpdateDistance = 50.0f * 50.0f;
 	FMRSMeshTranslationOffset& TranslationOffset = EntityView.GetFragmentData<FMRSMeshTranslationOffset>();
-	if (MaxSmoothNetUpdateDistance > FVector::DistSquared(PreviousLocation, NewLocation))
+	const FMRSMeshOffsetParams& OffsetParams = EntityView.GetConstSharedFragmentData<FMRSMeshOffsetParams>();
+	if (OffsetParams.MaxSmoothNetUpdateDistanceSqr > FVector::DistSquared(PreviousLocation, NewLocation))
 	{
 		TranslationOffset.TranslationOffset += PreviousLocation - NewLocation;
 	}
@@ -26,6 +26,7 @@ void FMRSMassClientBubbleHandler::AddQueryRequirements(FMassEntityQuery& InQuery
 	FMRBMassClientBubbleHandler::AddQueryRequirements(InQuery);
 
 	InQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadWrite);
+	InQuery.AddConstSharedRequirement<FMRSMeshOffsetParams>();
 }
 
 AMRSMassClientBubbleSmoothInfo::AMRSMassClientBubbleSmoothInfo(const FObjectInitializer& ObjectInitializer)

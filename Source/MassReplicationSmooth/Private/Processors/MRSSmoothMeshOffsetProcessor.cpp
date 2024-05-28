@@ -22,6 +22,7 @@ void UMRSSmoothMeshOffsetProcessor::ConfigureQueries()
 {
 	EntityQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite, EMassFragmentPresence::Optional);
+	EntityQuery.AddConstSharedRequirement<FMRSMeshOffsetParams>();
 	
 	EntityQuery.RegisterWithProcessor(*this);
 }
@@ -29,39 +30,38 @@ void UMRSSmoothMeshOffsetProcessor::ConfigureQueries()
 void UMRSSmoothMeshOffsetProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
 	EntityQuery.ForEachEntityChunk(EntityManager, Context, [](FMassExecutionContext& Context)
-{
-	const TArrayView<FMRSMeshTranslationOffset>& MeshOffsetList = Context.GetMutableFragmentView<FMRSMeshTranslationOffset>();
-
-	const float DeltaTime = Context.GetWorld()->DeltaTimeSeconds;
-
-	for (int32 EntityIndex = 0; EntityIndex < Context.GetNumEntities(); ++EntityIndex)
 	{
-		FMRSMeshTranslationOffset& MeshOffset = MeshOffsetList[EntityIndex];
-			
-		constexpr float MaxDeltaTimeToSmooth = 1.0f;
-		if (DeltaTime < MaxDeltaTimeToSmooth)
+		const TArrayView<FMRSMeshTranslationOffset>& MeshOffsetList = Context.GetMutableFragmentView<FMRSMeshTranslationOffset>();
+		const FMRSMeshOffsetParams& Params = Context.GetConstSharedFragment<FMRSMeshOffsetParams>();
+
+		const float DeltaTime = Context.GetWorld()->DeltaTimeSeconds;
+
+		for (int32 EntityIndex = 0; EntityIndex < Context.GetNumEntities(); ++EntityIndex)
 		{
-			constexpr float SmoothTime = 0.2f;
-			MeshOffset.TranslationOffset *= (1.0f - DeltaTime / SmoothTime);
+			FMRSMeshTranslationOffset& MeshOffset = MeshOffsetList[EntityIndex];
+
+			if (DeltaTime < Params.MaxTimeToSmooth)
+			{
+				MeshOffset.TranslationOffset *= (1.0f - DeltaTime / Params.SmoothTime);
+			}
+			else
+			{
+				MeshOffset.TranslationOffset = FVector::ZeroVector;
+			}
 		}
-		else
-		{
-			MeshOffset.TranslationOffset = FVector::ZeroVector;
-		}
-	}
-});
+	});
 }
 
-void UUSMassUpdateISMProcessor::ConfigureQueries()
+void UMRSMassUpdateISMProcessor::ConfigureQueries()
 {
 	Super::ConfigureQueries();
 	
 	EntityQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadOnly, EMassFragmentPresence::Optional);
 }
 
-void UUSMassUpdateISMProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
+void UMRSMassUpdateISMProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-		EntityQuery.ForEachEntityChunk(EntityManager, Context, [](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(EntityManager, Context, [](FMassExecutionContext& Context)
 	{
 		UMassRepresentationSubsystem* RepresentationSubsystem = Context.GetSharedFragment<FMassRepresentationSubsystemSharedFragment>().RepresentationSubsystem;
 		check(RepresentationSubsystem);
@@ -82,6 +82,10 @@ void UUSMassUpdateISMProcessor::Execute(FMassEntityManager& EntityManager, FMass
 			if (MeshOffsetList.Num() > 0)
 			{
 				MeshTranslationOffset = MeshOffsetList[EntityIdx].TranslationOffset;
+				if (!MeshTranslationOffset.IsNearlyZero())
+				{
+					// DrawDebugBox(Context.GetWorld(), TransformFragment.GetTransform().GetLocation(), FVector(50.0f), FColor::Red, false, -1, 0, 2.0f);
+				}
 			}
 
 			FTransform Transform = TransformFragment.GetTransform();

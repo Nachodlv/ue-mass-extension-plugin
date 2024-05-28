@@ -25,7 +25,9 @@ public class MassReplicationSmooth : ModuleRules
                 "MassEntity",
                 "MassReplication",
                 "MassRepresentation",
-                "MassCommon"
+                "MassCommon",
+                "MassSpawner",
+                "StructUtils"
             }
         );
     }
