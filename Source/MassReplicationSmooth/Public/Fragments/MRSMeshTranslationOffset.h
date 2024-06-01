@@ -27,6 +27,7 @@ struct FMRSMeshOffsetParams : public FMassSharedFragment
 	float MaxSmoothNetUpdateDistanceSqr = 0.0f;
 
 public:
+	/** Returns a copy of this instance with the parameters validated */
 	FMRSMeshOffsetParams GetValidated() const;
 };
 

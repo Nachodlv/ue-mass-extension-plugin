@@ -58,7 +58,7 @@ struct TStructOpsTypeTraits<FMRSMassClientBubbleSerializer> : public TStructOpsT
 	};
 };
 
-
+/** The info actor base class that provides the actual replication */
 UCLASS()
 class MASSREPLICATIONSMOOTH_API AMRSMassClientBubbleSmoothInfo : public AMassClientBubbleInfoBase
 {

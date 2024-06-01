@@ -23,7 +23,6 @@ void UMRSSmoothMeshOffsetProcessor::ConfigureQueries()
 	EntityQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite, EMassFragmentPresence::Optional);
 	EntityQuery.AddConstSharedRequirement<FMRSMeshOffsetParams>();
-	
 	EntityQuery.RegisterWithProcessor(*this);
 }
 
@@ -82,10 +81,6 @@ void UMRSMassUpdateISMProcessor::Execute(FMassEntityManager& EntityManager, FMas
 			if (MeshOffsetList.Num() > 0)
 			{
 				MeshTranslationOffset = MeshOffsetList[EntityIdx].TranslationOffset;
-				if (!MeshTranslationOffset.IsNearlyZero())
-				{
-					// DrawDebugBox(Context.GetWorld(), TransformFragment.GetTransform().GetLocation(), FVector(50.0f), FColor::Red, false, -1, 0, 2.0f);
-				}
 			}
 
 			FTransform Transform = TransformFragment.GetTransform();
