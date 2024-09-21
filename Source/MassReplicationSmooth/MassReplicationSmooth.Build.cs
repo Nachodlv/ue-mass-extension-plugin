@@ -27,7 +27,8 @@ public class MassReplicationSmooth : ModuleRules
                 "MassRepresentation",
                 "MassCommon",
                 "MassSpawner",
-                "StructUtils"
+                "StructUtils",
+                "MassMovement"
             }
         );
     }

@@ -39,6 +39,12 @@ struct FMRSMeshTranslationOffset : public FMassFragment
 
 	UPROPERTY(Transient)
 	FVector TranslationOffset = FVector::ZeroVector;
+
+	/** Client timestamp when the offset was initialized */
+	double ClientOffsetTimestamp = 0.0;
+
+	/** Server timestamp when the entity location changed */
+	double ServerUpdateTimestamp = 0.0;
 };
 
 UCLASS()

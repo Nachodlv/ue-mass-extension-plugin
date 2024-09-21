@@ -11,13 +11,21 @@ void FMRSMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityVi
 	const FVector PreviousLocation = TransformFragment.GetTransform().GetLocation();
 	FMRBMassClientBubbleHandler::PostReplicatedChangeEntity(EntityView, Item);
 	const FVector NewLocation = TransformFragment.GetTransform().GetLocation();
+	
 
 	// Offsetting the mesh to sync with the sever locations smoothly
 	FMRSMeshTranslationOffset& TranslationOffset = EntityView.GetFragmentData<FMRSMeshTranslationOffset>();
 	const FMRSMeshOffsetParams& OffsetParams = EntityView.GetConstSharedFragmentData<FMRSMeshOffsetParams>();
-	if (OffsetParams.MaxSmoothNetUpdateDistanceSqr > FVector::DistSquared(PreviousLocation, NewLocation))
+	double DistSquared = FVector::DistSquared(PreviousLocation + TranslationOffset.TranslationOffset, NewLocation);
+	if (OffsetParams.MaxSmoothNetUpdateDistanceSqr > DistSquared)
 	{
 		TranslationOffset.TranslationOffset += PreviousLocation - NewLocation;
+		TranslationOffset.ClientOffsetTimestamp = Serializer->GetWorld()->GetRealTimeSeconds();
+		TranslationOffset.ServerUpdateTimestamp = Item.GetServerTimeStamp();
+	}
+	else
+	{
+		TranslationOffset.TranslationOffset = FVector::ZeroVector;
 	}
 }
 
@@ -32,7 +40,7 @@ void FMRSMassClientBubbleHandler::AddQueryRequirements(FMassEntityQuery& InQuery
 AMRSMassClientBubbleSmoothInfo::AMRSMassClientBubbleSmoothInfo(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	Serializers.Add(&BubbleSerializer);
+	Serializers.Add(&SmoothSerializer);
 }
 
 void AMRSMassClientBubbleSmoothInfo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -43,5 +51,5 @@ void AMRSMassClientBubbleSmoothInfo::GetLifetimeReplicatedProps(TArray<FLifetime
 	SharedParams.bIsPushBased = true;
 
 	// Technically, this doesn't need to be PushModel based because it's a FastArray and they ignore it.
-	DOREPLIFETIME_WITH_PARAMS_FAST(AMRSMassClientBubbleSmoothInfo, BubbleSerializer, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(AMRSMassClientBubbleSmoothInfo, SmoothSerializer, SharedParams);
 }

@@ -9,6 +9,7 @@
 #include "MassRepresentationTypes.h"
 
 // MRS Includes
+#include "MassMovementFragments.h"
 #include "Fragments/MRSMeshTranslationOffset.h"
 
 UMRSSmoothMeshOffsetProcessor::UMRSSmoothMeshOffsetProcessor()
@@ -21,8 +22,8 @@ UMRSSmoothMeshOffsetProcessor::UMRSSmoothMeshOffsetProcessor()
 void UMRSSmoothMeshOffsetProcessor::ConfigureQueries()
 {
 	EntityQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadWrite);
-	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite, EMassFragmentPresence::Optional);
 	EntityQuery.AddConstSharedRequirement<FMRSMeshOffsetParams>();
+	EntityQuery.AddRequirement<FMassVelocityFragment>(EMassFragmentAccess::ReadOnly, EMassFragmentPresence::Optional);
 	EntityQuery.RegisterWithProcessor(*this);
 }
 
@@ -31,22 +32,40 @@ void UMRSSmoothMeshOffsetProcessor::Execute(FMassEntityManager& EntityManager, F
 	EntityQuery.ForEachEntityChunk(EntityManager, Context, [](FMassExecutionContext& Context)
 	{
 		const TArrayView<FMRSMeshTranslationOffset>& MeshOffsetList = Context.GetMutableFragmentView<FMRSMeshTranslationOffset>();
+		const TConstArrayView<FMassVelocityFragment> VelocityFragments = Context.GetFragmentView<FMassVelocityFragment>();
 		const FMRSMeshOffsetParams& Params = Context.GetConstSharedFragment<FMRSMeshOffsetParams>();
 
 		const float DeltaTime = Context.GetWorld()->DeltaTimeSeconds;
+		double CurrentTimeStamps = Context.GetWorld()->GetRealTimeSeconds();
 
 		for (int32 EntityIndex = 0; EntityIndex < Context.GetNumEntities(); ++EntityIndex)
 		{
 			FMRSMeshTranslationOffset& MeshOffset = MeshOffsetList[EntityIndex];
 
-			if (DeltaTime < Params.MaxTimeToSmooth)
-			{
-				MeshOffset.TranslationOffset *= (1.0f - DeltaTime / Params.SmoothTime);
-			}
-			else
+			if (DeltaTime > Params.MaxTimeToSmooth || MeshOffset.TranslationOffset.IsNearlyZero())
 			{
 				MeshOffset.TranslationOffset = FVector::ZeroVector;
+				continue;
 			}
+			
+			const double TargetDelta = MeshOffset.ServerUpdateTimestamp - MeshOffset.ClientOffsetTimestamp;
+			const double RemainingTime = MeshOffset.ServerUpdateTimestamp - CurrentTimeStamps;
+			const double CurrentSmoothTime = TargetDelta - RemainingTime;
+
+			float SmoothTime = Params.SmoothTime;
+			if (!VelocityFragments.IsEmpty() && VelocityFragments[EntityIndex].Value.IsNearlyZero())
+			{
+				// If the entity is not moving then reduce the offset faster
+				SmoothTime *= 0.5f;
+			}
+			
+			if (CurrentSmoothTime > SmoothTime)
+			{
+				MeshOffset.TranslationOffset = FVector::ZeroVector;
+				continue;
+			}
+			SmoothTime -= CurrentSmoothTime;
+			MeshOffset.TranslationOffset *= FMath::Max(1.f - DeltaTime / SmoothTime, 0.0f);
 		}
 	});
 }

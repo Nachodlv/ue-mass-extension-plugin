@@ -5,7 +5,6 @@
 #include "MassCommonFragments.h"
 
 // MRB Includes
-#include "..\Public\MRBMassFastArray.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
 #if UE_REPLICATION_COMPILE_SERVER_CODE

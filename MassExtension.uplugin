@@ -22,6 +22,10 @@
 		{
 			"Name": "MassReplicationSmooth",
 			"Type": "Runtime"
+		},
+		{
+			"Name": "MassCollision",
+			"Type": "Runtime"
 		}
 	],
 	"Plugins": [

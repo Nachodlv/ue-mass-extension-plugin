@@ -6,7 +6,7 @@
 
 UMRBMoveForwardObserver::UMRBMoveForwardObserver()
 {
-	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::Standalone | EProcessorExecutionFlags::Server);
+	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::AllNetModes);
 	ObservedType = FMassVelocityFragment::StaticStruct();
 	Operation = EMassObservedOperation::Add;
 	bAutoRegisterWithObserverRegistry = false;

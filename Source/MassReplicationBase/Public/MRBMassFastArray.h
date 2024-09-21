@@ -14,9 +14,16 @@ struct FMRBReplicatedAgent : public FReplicatedAgentBase
 	const FVector& GetEntityLocation() const { return EntityLocation; }
 	void SetEntityLocation(const FVector& InEntityLocation) { EntityLocation = InEntityLocation; }
 
+	void SetServerTimeStamp(float TimeStamp) { ServerTimeStamps = TimeStamp; }
+	float GetServerTimeStamp() const { return ServerTimeStamps; }
+
 private:
 	UPROPERTY(Transient)
 	FVector_NetQuantize EntityLocation;
+
+	/** Time on server when the agent was updated */
+	UPROPERTY(Transient)
+	float ServerTimeStamps = 0;
 };
 
 /** Fast array item for efficient agent replication. Remember to make this dirty if any FReplicatedCrowdAgent member variables are modified */

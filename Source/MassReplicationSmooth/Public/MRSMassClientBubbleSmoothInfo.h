@@ -60,14 +60,14 @@ struct TStructOpsTypeTraits<FMRSMassClientBubbleSerializer> : public TStructOpsT
 
 /** The info actor base class that provides the actual replication */
 UCLASS()
-class MASSREPLICATIONSMOOTH_API AMRSMassClientBubbleSmoothInfo : public AMassClientBubbleInfoBase
+class MASSREPLICATIONSMOOTH_API AMRSMassClientBubbleSmoothInfo : public AMRBMassClientBubbleInfo
 {
 	GENERATED_BODY()
 	
 public:
 	AMRSMassClientBubbleSmoothInfo(const FObjectInitializer& ObjectInitializer);
 
-	FMRSMassClientBubbleSerializer& GetBubbleSerializer() { return BubbleSerializer; }
+	virtual FMassClientBubbleSerializerBase& GetBubbleSerializer() override { return SmoothSerializer; }
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -75,6 +75,6 @@ protected:
 private:
 	/** Contains the entities fast array */
 	UPROPERTY(Replicated, Transient) 
-	FMRSMassClientBubbleSerializer BubbleSerializer;
+	FMRSMassClientBubbleSerializer SmoothSerializer;
 
 };
