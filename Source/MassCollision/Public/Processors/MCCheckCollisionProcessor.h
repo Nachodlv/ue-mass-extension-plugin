@@ -35,6 +35,12 @@ public:
 	virtual void ConfigureQueries() override;
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
+
+	/** The signal name emitted when to entities collide with each other */
+	static FName CollisionSignal;
+
+	/** The processor group name */
+	static FName CollisionGroup;
 	
 private:
 	FMassEntityQuery EntityQuery;

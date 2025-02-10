@@ -13,6 +13,28 @@ struct FMCCollidesTag : public FMassTag
 	GENERATED_BODY()
 };
 
+/** Contains the data for a specific collision */
+struct FMCCollision
+{
+	/** Collision point */
+	FVector HitPoint;
+
+	FMassEntityHandle OtherEntity;
+
+	FVector Normal;
+};
+
+USTRUCT()
+struct FMCCollisionsInformation : public FMassFragment
+{
+	GENERATED_BODY()
+
+	TArray<FMCCollision> Collisions;
+
+	// TODO - this should be on a separate shared fragment
+	int32 CollisionLayerIndex = INDEX_NONE;
+};
+
 UCLASS()
 class MASSCOLLISION_API UMCMassCollisionTrait : public UMassEntityTraitBase
 {
@@ -20,4 +42,7 @@ class MASSCOLLISION_API UMCMassCollisionTrait : public UMassEntityTraitBase
 
 public:
 	virtual void BuildTemplate(FMassEntityTemplateBuildContext& BuildContext, const UWorld& World) const override;
+
+	UPROPERTY(EditAnywhere, meta = (GetOptions = "MassCollision.MCCollisionLayersSettings.GetCollisionLayerNames"))
+	FName CollisionLayer;
 };
