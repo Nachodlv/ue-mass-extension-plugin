@@ -1,9 +1,20 @@
 ﻿#pragma once
 
 #include "MassReplicationTypes.h"
-#include "MassClientBubbleHandler.h"
 
 #include "MRBMassFastArray.generated.h"
+
+USTRUCT()
+struct FMRBReplicatedPositionWithTimestamp
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Transient)
+	FVector_NetQuantize Position;
+
+	UPROPERTY(Transient)
+	float Timestamp = 0.0f;
+};
 
 /** The data that is replicated specific to each entity */
 USTRUCT()
@@ -11,19 +22,11 @@ struct FMRBReplicatedAgent : public FReplicatedAgentBase
 {
 	GENERATED_BODY()
 	
-	const FVector& GetEntityLocation() const { return EntityLocation; }
-	void SetEntityLocation(const FVector& InEntityLocation) { EntityLocation = InEntityLocation; }
-
-	void SetServerTimeStamp(float TimeStamp) { ServerTimeStamps = TimeStamp; }
-	float GetServerTimeStamp() const { return ServerTimeStamps; }
+	FMRBReplicatedPositionWithTimestamp& GetReplicatedPositionWithTimestamp() { return PositionWithTimestamp; }
+	const FMRBReplicatedPositionWithTimestamp& GetReplicatedPositionWithTimestamp() const { return PositionWithTimestamp; }
 
 private:
-	UPROPERTY(Transient)
-	FVector_NetQuantize EntityLocation;
-
-	/** Time on server when the agent was updated */
-	UPROPERTY(Transient)
-	float ServerTimeStamps = 0;
+	FMRBReplicatedPositionWithTimestamp PositionWithTimestamp;
 };
 
 /** Fast array item for efficient agent replication. Remember to make this dirty if any FReplicatedCrowdAgent member variables are modified */

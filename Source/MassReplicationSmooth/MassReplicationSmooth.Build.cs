@@ -9,7 +9,7 @@ public class MassReplicationSmooth : ModuleRules
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
-                "Core", 
+                "Core"
             }
         );
 
@@ -28,7 +28,8 @@ public class MassReplicationSmooth : ModuleRules
                 "MassCommon",
                 "MassSpawner",
                 "StructUtils",
-                "MassMovement"
+                "MassMovement",
+                "MassActors"
             }
         );
     }

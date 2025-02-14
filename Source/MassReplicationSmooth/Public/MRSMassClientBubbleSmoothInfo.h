@@ -1,20 +1,37 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Handler/MRSMassReplicationHandlers.h"
 #include "MassReplicationBase/Public/MRBMassClientBubbleInfo.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
 #include "MRSMassClientBubbleSmoothInfo.generated.h"
 
 /** Inserts the data that the server replicated into the fragments */
-class FMRSMassClientBubbleHandler : public FMRBMassClientBubbleHandler
+class FMRSMassClientBubbleHandler : public TMRBMassClientBubbleHandlerBase<FMRBMassFastArrayItem>
 {
+public:
+	FMRSMassClientBubbleHandler() : LocationHandler(*this) {}
+	
+#if UE_REPLICATION_COMPILE_SERVER_CODE
+	TMRBMassClientBubbleTimestampLocationHandler<FMRBMassFastArrayItem>& GetLocationHandler() { return LocationHandler; }
+#endif // UE_REPLICATION_COMPILE_SERVER_CODE
+
 protected:
 #if UE_REPLICATION_COMPILE_CLIENT_CODE
-	virtual void PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item) const override;
+	virtual void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize) override;
+	virtual void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize) override;
 
-	virtual void AddQueryRequirements(FMassEntityQuery& InQuery) const override;
+	virtual void PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item);
 #endif //UE_REPLICATION_COMPILE_CLIENT_CODE
+
+#if WITH_MASSGAMEPLAY_DEBUG && WITH_EDITOR
+	virtual void DebugValidateBubbleOnServer() override {}
+	virtual void DebugValidateBubbleOnClient() override {}
+#endif // WITH_MASSGAMEPLAY_DEBUG && WITH_EDITOR
+
+private:
+	TMRSMassClientBubbleSmoothLocationHandler<FMRBMassFastArrayItem> LocationHandler;
 };
 
 /** Mass client bubble, there will be one of these per client, and it will handle replicating the fast array of Agents between the server and clients */

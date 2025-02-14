@@ -1,16 +1,15 @@
 ﻿#include "MRBMassReplicator.h"
 
-// UE Includes
-#include "MassCommonFragments.h"
-
 // MRB Includes
 #include "MRBMassClientBubbleInfo.h"
 #include "MRBMassFastArray.h"
+#include "MassReplicationTransformHandlers.h"
+#include "Handlers/MRBMassReplicationHandlers.h"
 
 
 void UMRBMassReplicator::AddRequirements(FMassEntityQuery& EntityQuery)
 {
-	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
+	FMassReplicationProcessorTransformHandlerBase::AddRequirements(EntityQuery);
 }
 
 void UMRBMassReplicator::ProcessClientReplication(FMassExecutionContext& Context, FMassReplicationContext& ReplicationContext)
@@ -19,13 +18,12 @@ void UMRBMassReplicator::ProcessClientReplication(FMassExecutionContext& Context
 	
 	// Cached variables used in the other lambda functions
 	FMassReplicationSharedFragment* RepSharedFrag = nullptr;
-	TConstArrayView<FTransformFragment> TransformFragments;
-	TArrayView<FMassReplicatedAgentFragment> AgentFragments;
+	
+	FMRBMassReplicationTransform TransformHandlerBase;
 
 	auto CacheViewsCallback = [&] (FMassExecutionContext& InContext)
 	{
-		TransformFragments = InContext.GetFragmentView<FTransformFragment>();
-		AgentFragments = InContext.GetMutableFragmentView<FMassReplicatedAgentFragment>();
+		TransformHandlerBase.CacheFragmentViews(InContext);
 		RepSharedFrag = &InContext.GetMutableSharedFragment<FMassReplicationSharedFragment>();
 	};
 
@@ -35,11 +33,10 @@ void UMRBMassReplicator::ProcessClientReplication(FMassExecutionContext& Context
 		AMRBMassClientBubbleInfo& BubbleInfo = RepSharedFrag->GetTypedClientBubbleInfoChecked<AMRBMassClientBubbleInfo>(ClientHandle);
 
 		// Sets the location in the entity agent
-		InReplicatedAgent.SetEntityLocation(TransformFragments[EntityIdx].GetTransform().GetLocation());
-		InReplicatedAgent.SetServerTimeStamp(AgentFragments[EntityIdx].AgentData.LastUpdateTime);
+		TransformHandlerBase.AddEntity(EntityIdx, InReplicatedAgent.GetReplicatedPositionWithTimestamp());
 
 		// Adds the new agent in the client bubble
-		FMRBMassClientBubbleHandler* ClientHandler = static_cast<FMRBMassClientBubbleHandler*>(BubbleInfo.GetBubbleSerializer().GetClientHandler());
+		TMRBMassClientBubbleHandler* ClientHandler = static_cast<TMRBMassClientBubbleHandler*>(BubbleInfo.GetBubbleSerializer().GetClientHandler());
 		return ClientHandler->AddAgent(InContext.GetEntity(EntityIdx), InReplicatedAgent);
 	};
 
@@ -49,36 +46,16 @@ void UMRBMassReplicator::ProcessClientReplication(FMassExecutionContext& Context
 	{
 		// Grabs the client bubble
 		AMRBMassClientBubbleInfo& BubbleInfo = RepSharedFrag->GetTypedClientBubbleInfoChecked<AMRBMassClientBubbleInfo>(ClientHandle);
-		FMRBMassClientBubbleHandler* Bubble = static_cast<FMRBMassClientBubbleHandler*>(BubbleInfo.GetBubbleSerializer().GetClientHandler());
+		TMRBMassClientBubbleHandler* Bubble = static_cast<TMRBMassClientBubbleHandler*>(BubbleInfo.GetBubbleSerializer().GetClientHandler());
 
-		// Retrieves the entity agent
-		FMRBMassFastArrayItem* Item = Bubble->GetMutableItem(Handle);
-
-		bool bMarkItemDirty = false;
-
-		const FVector& EntityLocation = TransformFragments[EntityIdx].GetTransform().GetLocation();
-		constexpr float LocationTolerance = 10.0f;
-		if (!FVector::PointsAreNear(EntityLocation, Item->Agent.GetEntityLocation(), LocationTolerance))
-		{
-			// Only updates the agent position if the transform fragment location has changed
-			Item->Agent.SetEntityLocation(EntityLocation);
-			bMarkItemDirty = true;
-		}
-
-		if (bMarkItemDirty)
-		{
-			Item->Agent.SetServerTimeStamp(Time);
-
-			// Marks the agent as dirty so it replicated to the client
-			Bubble->MarkItemDirty(*Item);
-		}
+		TransformHandlerBase.ModifyEntity(Handle, EntityIdx, Time, Bubble->GetLocationHandler());
 	};
 
 	auto RemoveEntityCallback = [&](FMassExecutionContext& Context, const FMassReplicatedAgentHandle Handle, const FMassClientHandle ClientHandle)
 	{
 		// Retrieve the client bubble
 		AMRBMassClientBubbleInfo& BubbleInfo = RepSharedFrag->GetTypedClientBubbleInfoChecked<AMRBMassClientBubbleInfo>(ClientHandle);
-		FMRBMassClientBubbleHandler* Bubble = static_cast<FMRBMassClientBubbleHandler*>(BubbleInfo.GetBubbleSerializer().GetClientHandler());
+		TMRBMassClientBubbleHandler* Bubble = static_cast<TMRBMassClientBubbleHandler*>(BubbleInfo.GetBubbleSerializer().GetClientHandler());
 
 		// Remove the entity agent from the bubble
 		Bubble->RemoveAgent(Handle);

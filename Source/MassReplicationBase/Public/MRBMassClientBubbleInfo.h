@@ -3,23 +3,23 @@
 #include "CoreMinimal.h"
 #include "MassClientBubbleHandler.h"
 #include "MassClientBubbleInfoBase.h"
-#include "MassClientBubbleSerializerBase.h"
+#include "MRBMassClientBubbleHandlerBase.h"
 #include "MRBMassFastArray.h"
+#include "Handlers/MRBMassReplicationHandlers.h"
 
 #include "MRBMassClientBubbleInfo.generated.h"
 
 struct FMRBMassFastArrayItem;
 
 /** Inserts the data that the server replicated into the fragments */
-class MASSREPLICATIONBASE_API FMRBMassClientBubbleHandler : public TClientBubbleHandlerBase<FMRBMassFastArrayItem>
+class MASSREPLICATIONBASE_API TMRBMassClientBubbleHandler : public TMRBMassClientBubbleHandlerBase<FMRBMassFastArrayItem>
 {
 public:
+	TMRBMassClientBubbleHandler() : LocationHandler(*static_cast<TMRBMassClientBubbleHandlerBase*>(this))
+	{
+	}
 #if UE_REPLICATION_COMPILE_SERVER_CODE
-	/** Returns the item containing the agent with given handle */
-	FMRBMassFastArrayItem* GetMutableItem(FMassReplicatedAgentHandle Handle);
-
-	/** Marks the given item as modified, so it replicates its changes to th client */
-	void MarkItemDirty(FMRBMassFastArrayItem & Item) const;
+	TMRBMassClientBubbleTimestampLocationHandler<FMRBMassFastArrayItem>& GetLocationHandler() { return LocationHandler; }
 #endif // UE_REPLICATION_COMPILE_SERVER_CODE
 
 protected:
@@ -27,16 +27,16 @@ protected:
 	virtual void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize) override;
 	virtual void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize) override;
 
-	virtual void PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item) const;
-
-	virtual void AddQueryRequirements(FMassEntityQuery& InQuery) const;
+	virtual void PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item);
 #endif //UE_REPLICATION_COMPILE_CLIENT_CODE
 
 #if WITH_MASSGAMEPLAY_DEBUG && WITH_EDITOR
 	virtual void DebugValidateBubbleOnServer() override {}
 	virtual void DebugValidateBubbleOnClient() override {}
 #endif // WITH_MASSGAMEPLAY_DEBUG && WITH_EDITOR
-	
+
+private:
+	TMRBMassClientBubbleTimestampLocationHandler<FMRBMassFastArrayItem> LocationHandler;
 };
 
 /** Mass client bubble, there will be one of these per client, and it will handle replicating the fast array of Agents between the server and clients */
@@ -55,7 +55,7 @@ public:
 	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams);
 
 	/** The one responsible for storing the server data in the client fragments */
-	FMRBMassClientBubbleHandler Bubble;
+	TMRBMassClientBubbleHandler Bubble;
 
 protected:
 	/** Fast Array of Agents for efficient replication. Maintained as a freelist on the server, to keep index consistency as indexes are used as Handles into the Array 

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "MassAgentTraits.h"
 #include "MassEntityTraitBase.h"
 #include "MassEntityTypes.h"
 
@@ -14,15 +15,15 @@ struct FMRSMeshOffsetParams : public FMassSharedFragment
 
 	/** Maximum time the smoothing can take. If it takes more than this values it will snap to the actual position */
 	UPROPERTY(EditAnywhere, meta = (UIMin = 0.0f, ClampMin = 0.0f))
-	float MaxTimeToSmooth = 1.0f;
+	float MaxTimeToSmooth = 0.2f;
 
 	/** How much time the smooth can take */
 	UPROPERTY(EditAnywhere, meta = (UIMin = 0.0f, ClampMin = 0.0f))
-	float SmoothTime = 0.2f;
+	float SmoothTime = 0.5f;
 
 	/** The tolerated distance to smooth. If the distance is higher the mesh will snap to the actual position. */
 	UPROPERTY(EditAnywhere, meta = (UIMin = 0.0f, ClampMin = 0.0f))
-	float MaxSmoothNetUpdateDistance = 50.0f;
+	float MaxSmoothNetUpdateDistance = 300.0f;
 
 	float MaxSmoothNetUpdateDistanceSqr = 0.0f;
 
@@ -60,4 +61,18 @@ private:
 	FMRSMeshOffsetParams MeshOffsetParams;
 };
 
+USTRUCT()
+struct FMRSTranslateLocationTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
+UCLASS()
+class UMRSSyncOffsetLocationTrait : public UMassAgentSyncTrait
+{
+	GENERATED_BODY()
+
+public:
+	virtual void BuildTemplate(FMassEntityTemplateBuildContext& BuildContext, const UWorld& World) const override;
+};
 

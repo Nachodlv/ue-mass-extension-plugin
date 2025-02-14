@@ -7,50 +7,28 @@
 // MRB Includes
 #include "Net/Serialization/FastArraySerializer.h"
 
-#if UE_REPLICATION_COMPILE_SERVER_CODE
-
-FMRBMassFastArrayItem* FMRBMassClientBubbleHandler::GetMutableItem(FMassReplicatedAgentHandle Handle)
-{
-	if (AgentHandleManager.IsValidHandle(Handle))
-	{
-		const FMassAgentLookupData& LookUpData = AgentLookupArray[Handle.GetIndex()];
-
-		return &(*Agents)[LookUpData.AgentsIdx];
-	}
-	return nullptr;
-}
-
-void FMRBMassClientBubbleHandler::MarkItemDirty(FMRBMassFastArrayItem& Item) const
-{
-	Serializer->MarkItemDirty(Item);
-}
-
-#endif // UE_REPLICATION_COMPILE_SERVER_CODE
-
 #if UE_REPLICATION_COMPILE_CLIENT_CODE
 
-void FMRBMassClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize)
+void TMRBMassClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize)
 {
-	TArrayView<FTransformFragment> TransformFragments;
-
 	// Add the requirements for the query used to grab all the transform fragments
 	auto AddRequirementsForSpawnQuery = [this](FMassEntityQuery& InQuery)
 	{
-		AddQueryRequirements(InQuery);
+		LocationHandler.AddRequirementsForSpawnQuery(InQuery);
 	};
 
 	// Cache the transform fragments
 	auto CacheFragmentViewsForSpawnQuery = [&]
 		(FMassExecutionContext& InExecContext)
 	{
-		TransformFragments = InExecContext.GetMutableFragmentView<FTransformFragment>();
+		LocationHandler.CacheFragmentViewsForSpawnQuery(InExecContext);
 	};
 
 	// Called when a new entity is spawned. Stores the entity location in the transform fragment
 	auto SetSpawnedEntityData = [&]
 		(const FMassEntityView& EntityView, const FMRBReplicatedAgent& ReplicatedEntity, const int32 EntityIdx)
 	{
-		TransformFragments[EntityIdx].GetMutableTransform().SetLocation(ReplicatedEntity.GetEntityLocation());
+		LocationHandler.SetSpawnedEntityData(EntityIdx, ReplicatedEntity.GetReplicatedPositionWithTimestamp());
 	};
 
 	auto PostReplicatedChange = [this](const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item)
@@ -60,9 +38,11 @@ void FMRBMassClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> Adde
 
 	// PostReplicatedChangeEntity is called when there are multiples adds without a remove so it's treated as a change
 	PostReplicatedAddHelper(AddedIndices, AddRequirementsForSpawnQuery, CacheFragmentViewsForSpawnQuery, SetSpawnedEntityData, PostReplicatedChange);
+
+	LocationHandler.ClearFragmentViewsForSpawnQuery();
 }
 
-void FMRBMassClientBubbleHandler::PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize)
+void TMRBMassClientBubbleHandler::PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize)
 {
 	PostReplicatedChangeHelper(ChangedIndices, [this](const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item)
 	{
@@ -70,18 +50,9 @@ void FMRBMassClientBubbleHandler::PostReplicatedChange(const TArrayView<int32> C
 	});
 }
 
-void FMRBMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item) const
+void TMRBMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item)
 {
-	// Grabs the transform fragment from the entity
-	FTransformFragment& TransformFragment = EntityView.GetFragmentData<FTransformFragment>();
-
-	// Sets the transform location with the agent location
-	TransformFragment.GetMutableTransform().SetLocation(Item.GetEntityLocation());
-}
-
-void FMRBMassClientBubbleHandler::AddQueryRequirements(FMassEntityQuery& InQuery) const
-{
-	InQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
+	LocationHandler.SetModifiedEntityData(EntityView, Item.GetReplicatedPositionWithTimestamp());
 }
 
 #endif //UE_REPLICATION_COMPILE_CLIENT_CODE

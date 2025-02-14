@@ -1,40 +1,56 @@
 ﻿#include "MRSMassClientBubbleSmoothInfo.h"
 
-#include "MassCommonFragments.h"
-#include "Fragments/MRSMeshTranslationOffset.h"
 #include "Net/UnrealNetwork.h"
 
+#if UE_REPLICATION_COMPILE_SERVER_CODE
 
-void FMRSMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item) const
+void FMRSMassClientBubbleHandler::PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalSize)
 {
-	FTransformFragment& TransformFragment = EntityView.GetFragmentData<FTransformFragment>();
-	const FVector PreviousLocation = TransformFragment.GetTransform().GetLocation();
-	FMRBMassClientBubbleHandler::PostReplicatedChangeEntity(EntityView, Item);
-	const FVector NewLocation = TransformFragment.GetTransform().GetLocation();
-	
+	// Add the requirements for the query used to grab all the transform fragments
+	auto AddRequirementsForSpawnQuery = [this](FMassEntityQuery& InQuery)
+	{
+		LocationHandler.AddRequirementsForSpawnQuery(InQuery);
+	};
 
-	// Offsetting the mesh to sync with the sever locations smoothly
-	FMRSMeshTranslationOffset& TranslationOffset = EntityView.GetFragmentData<FMRSMeshTranslationOffset>();
-	const FMRSMeshOffsetParams& OffsetParams = EntityView.GetConstSharedFragmentData<FMRSMeshOffsetParams>();
-	double DistSquared = FVector::DistSquared(PreviousLocation + TranslationOffset.TranslationOffset, NewLocation);
-	if (OffsetParams.MaxSmoothNetUpdateDistanceSqr > DistSquared)
+	// Cache the transform fragments
+	auto CacheFragmentViewsForSpawnQuery = [&]
+		(FMassExecutionContext& InExecContext)
 	{
-		TranslationOffset.TranslationOffset += PreviousLocation - NewLocation;
-		TranslationOffset.ClientOffsetTimestamp = Serializer->GetWorld()->GetRealTimeSeconds();
-		TranslationOffset.ServerUpdateTimestamp = Item.GetServerTimeStamp();
-	}
-	else
+		LocationHandler.CacheFragmentViewsForSpawnQuery(InExecContext);
+	};
+
+	// Called when a new entity is spawned. Stores the entity location in the transform fragment
+	auto SetSpawnedEntityData = [&]
+		(const FMassEntityView& EntityView, const FMRBReplicatedAgent& ReplicatedEntity, const int32 EntityIdx)
 	{
-		TranslationOffset.TranslationOffset = FVector::ZeroVector;
-	}
+		LocationHandler.SetSpawnedEntityData(EntityIdx, ReplicatedEntity.GetReplicatedPositionWithTimestamp());
+	};
+
+	auto PostReplicatedChange = [this](const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item)
+	{
+		PostReplicatedChangeEntity(EntityView, Item);
+	};
+
+	// PostReplicatedChangeEntity is called when there are multiples adds without a remove so it's treated as a change
+	PostReplicatedAddHelper(AddedIndices, AddRequirementsForSpawnQuery, CacheFragmentViewsForSpawnQuery, SetSpawnedEntityData, PostReplicatedChange);
+
+	LocationHandler.ClearFragmentViewsForSpawnQuery();
 }
 
-void FMRSMassClientBubbleHandler::AddQueryRequirements(FMassEntityQuery& InQuery) const
+void FMRSMassClientBubbleHandler::PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalSize)
 {
-	FMRBMassClientBubbleHandler::AddQueryRequirements(InQuery);
+	PostReplicatedChangeHelper(ChangedIndices, [this](const FMassEntityView& EntityView, const FMRBReplicatedAgent& Item)
+	{
+		PostReplicatedChangeEntity(EntityView, Item);
+	});
+}
 
-	InQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadWrite);
-	InQuery.AddConstSharedRequirement<FMRSMeshOffsetParams>();
+#endif // UE_REPLICATION_COMPILE_SERVER_CODE
+
+void FMRSMassClientBubbleHandler::PostReplicatedChangeEntity(const FMassEntityView& EntityView,
+	const FMRBReplicatedAgent& Item)
+{
+	LocationHandler.SetModifiedEntityData(EntityView, Item.GetReplicatedPositionWithTimestamp());
 }
 
 AMRSMassClientBubbleSmoothInfo::AMRSMassClientBubbleSmoothInfo(const FObjectInitializer& ObjectInitializer)
