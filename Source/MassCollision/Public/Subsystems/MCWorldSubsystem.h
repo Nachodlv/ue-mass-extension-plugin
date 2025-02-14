@@ -37,7 +37,7 @@ struct FMCCollisionLayerInfo
 
 /** Contains the collision layers present in the project and the interactions between them */
 UCLASS(Config = Game, DisplayName = "Mass Collision Layers", DefaultConfig)
-class UMCCollisionLayersSettings : public UDeveloperSettings
+class MASSCOLLISION_API UMCCollisionLayersSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -68,7 +68,9 @@ public:
 
 	void RemoveCollision(const FMassEntityHandle& EntityHandle);
 
-	void RetrieveCollisions(const UE::Geometry::FAxisAlignedBox3d& SearchBounds, int32 CollisionLayerIndex, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc);
+	void RetrieveCollisions(const UE::Geometry::FAxisAlignedBox3d& SearchBounds, int32 CollisionLayerIndex, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
+
+	void RetrieveCollisionsByFlag(const UE::Geometry::FAxisAlignedBox3d& SearchBounds, uint8 CollisionFlag, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
 
 	virtual TStatId GetStatId() const override;
 

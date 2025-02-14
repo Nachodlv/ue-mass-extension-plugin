@@ -97,7 +97,7 @@ void UMCWorldSubsystem::RemoveCollision(const FMassEntityHandle& EntityHandle)
 }
 
 void UMCWorldSubsystem::RetrieveCollisions(const UE::Geometry::FAxisAlignedBox3d& SearchBounds, int32 CollisionLayerIndex,
-	TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc)
+	TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const
 {
 	UE_MT_SCOPED_READ_ACCESS(OctreeAccessDetector);
 
@@ -106,7 +106,13 @@ void UMCWorldSubsystem::RetrieveCollisions(const UE::Geometry::FAxisAlignedBox3d
 		return;
 	}
 	
-	uint8 CollisionFlag = CollisionFlags[CollisionLayerIndex];
+	const uint8 CollisionFlag = CollisionFlags[CollisionLayerIndex];
+	RetrieveCollisionsByFlag(SearchBounds, CollisionFlag, ObjectIDFunc);
+}
+
+void UMCWorldSubsystem::RetrieveCollisionsByFlag(const UE::Geometry::FAxisAlignedBox3d& SearchBounds,
+	uint8 CollisionFlag, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const
+{
 	CollisionOctree.RangeQuery(SearchBounds, [&ObjectIDFunc, this, &CollisionFlag](int32 ObjectID)
 	{
 		const FMassEntityHandle& EntityHandle = EntitiesByOctreeElementId[ObjectID];
@@ -152,6 +158,11 @@ void UMCWorldSubsystem::Tick(float DeltaTime)
 		if (RadiusFragment && TransformFragment)
 		{
 			DrawDebugCircle(GetWorld(), TransformFragment->GetTransform().GetLocation(), RadiusFragment->Radius, 10, FColor::Red, false, -1.0f, 0, 0, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f));
+
+			if (FMCCollisionLayer* CollisionLayerFragment = EntityManager.GetConstSharedFragmentDataPtr<FMCCollisionLayer>(CollisionData.Key))
+			{
+				DrawDebugString(GetWorld(), TransformFragment->GetTransform().GetLocation(), FString::FromInt(CollisionLayerFragment->CollisionLayerIndex), nullptr, FColor::White, DeltaTime);
+			}
 		}
 
 		if (const FMCCollisionsInformation* CollisionInformation = EntityManager.GetFragmentDataPtr<FMCCollisionsInformation>(CollisionData.Key))
