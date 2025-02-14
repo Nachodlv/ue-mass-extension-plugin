@@ -11,19 +11,24 @@
 void UMCMassCollisionTrait::BuildTemplate(FMassEntityTemplateBuildContext& BuildContext, const UWorld& World) const
 {
 	BuildContext.AddTag<FMCCollidesTag>();
+	
+	BuildContext.AddFragment<FMCCollisionsInformation>();
 
-	FMCCollisionsInformation& CollisionInfo = BuildContext.AddFragment_GetRef<FMCCollisionsInformation>();
-
+	FMassEntityManager& EntityManager = UE::Mass::Utils::GetEntityManagerChecked(World);
+	FMCCollisionLayer CollisionLayerFragment;
+	
 	if (const UMCCollisionLayersSettings* LayerSettings = GetDefault<UMCCollisionLayersSettings>())
 	{
 		TOptional<int32> CollisionIndex = LayerSettings->GetCollisionIndexWithName(CollisionLayer);
 		if (ensure(CollisionIndex))
 		{
-			CollisionInfo.CollisionLayerIndex = *CollisionIndex;
+			CollisionLayerFragment.CollisionLayerIndex = *CollisionIndex;
 		}
 	}
 
+	const FConstSharedStruct& SharedFragment = EntityManager.GetOrCreateConstSharedFragment(CollisionLayerFragment);
+	BuildContext.AddConstSharedFragment(SharedFragment);
+
 	BuildContext.RequireFragment<FAgentRadiusFragment>();
 	BuildContext.RequireFragment<FTransformFragment>();
-	BuildContext.RequireFragment<FMassVelocityFragment>();
 }

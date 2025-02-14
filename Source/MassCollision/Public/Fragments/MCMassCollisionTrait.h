@@ -30,8 +30,14 @@ struct FMCCollisionsInformation : public FMassFragment
 	GENERATED_BODY()
 
 	TArray<FMCCollision> Collisions;
+};
 
-	// TODO - this should be on a separate shared fragment
+USTRUCT()
+struct FMCCollisionLayer : public FMassSharedFragment
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
 	int32 CollisionLayerIndex = INDEX_NONE;
 };
 

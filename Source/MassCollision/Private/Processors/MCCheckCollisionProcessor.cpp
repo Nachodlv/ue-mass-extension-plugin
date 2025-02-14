@@ -38,8 +38,8 @@ void UMCCollisionObserver::ConfigureQueries()
 {
 	AddCollisionQuery.AddRequirement<FAgentRadiusFragment>(EMassFragmentAccess::ReadOnly);
 	AddCollisionQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
-	AddCollisionQuery.AddRequirement<FMCCollisionsInformation>(EMassFragmentAccess::ReadOnly);
 	AddCollisionQuery.AddTagRequirement<FMCCollidesTag>(EMassFragmentPresence::Optional);
+	AddCollisionQuery.AddConstSharedRequirement<FMCCollisionLayer>();
 	AddCollisionQuery.AddSubsystemRequirement<UMCWorldSubsystem>(EMassFragmentAccess::ReadWrite);
 	AddCollisionQuery.RegisterWithProcessor(*this);
 }
@@ -50,7 +50,7 @@ void UMCCollisionObserver::Execute(FMassEntityManager& EntityManager, FMassExecu
 	{
 		const TConstArrayView<FAgentRadiusFragment> AgentRadiusFragments = InContext.GetFragmentView<FAgentRadiusFragment>();
 		const TConstArrayView<FTransformFragment> TransformFragments = InContext.GetFragmentView<FTransformFragment>();
-		const TConstArrayView<FMCCollisionsInformation> CollisionFragments = InContext.GetFragmentView<FMCCollisionsInformation>();
+		const FMCCollisionLayer& CollisionLayer = InContext.GetConstSharedFragment<FMCCollisionLayer>();
 		UMCWorldSubsystem* MCWorldSubsystem = InContext.GetMutableSubsystem<UMCWorldSubsystem>();
 		const bool bShouldCollide = InContext.DoesArchetypeHaveTag<FMCCollidesTag>();
 		
@@ -61,9 +61,8 @@ void UMCCollisionObserver::Execute(FMassEntityManager& EntityManager, FMassExecu
 			FMassEntityHandle Entity = InContext.GetEntity(i);
 			if (bShouldCollide && !MCWorldSubsystem->HasCollision(Entity))
 			{
-				const int32 CollisionLayer = CollisionFragments[i].CollisionLayerIndex;
 				UE::Geometry::FAxisAlignedBox3d Bounds (EntityLocation, AgentRadius);
-				MCWorldSubsystem->AddCollision(Entity, Bounds, CollisionLayer);
+				MCWorldSubsystem->AddCollision(Entity, Bounds, CollisionLayer.CollisionLayerIndex);
 			}
 			else
 			{
@@ -101,6 +100,7 @@ void UMCCheckCollisionProcessor::ConfigureQueries()
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FMCCollisionsInformation>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddTagRequirement<FMCCollidesTag>(EMassFragmentPresence::All);
+	EntityQuery.AddConstSharedRequirement<FMCCollisionLayer>();
 	EntityQuery.AddSubsystemRequirement<UMCWorldSubsystem>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddSubsystemRequirement<UMassSignalSubsystem>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.RegisterWithProcessor(*this);
@@ -113,6 +113,7 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 		const TConstArrayView<FAgentRadiusFragment> AgentRadiusFragments = Context.GetFragmentView<FAgentRadiusFragment>();
 		const TConstArrayView<FTransformFragment> TransformFragments = Context.GetFragmentView<FTransformFragment>();
 		const TArrayView<FMCCollisionsInformation> CollisionFragments = Context.GetMutableFragmentView<FMCCollisionsInformation>();
+		const FMCCollisionLayer& CollisionLayer = Context.GetConstSharedFragment<FMCCollisionLayer>();
 		
 		UMCWorldSubsystem& MCWorldSubsystem = Context.GetMutableSubsystemChecked<UMCWorldSubsystem>();
 		UMassSignalSubsystem& SignalSubsystem = Context.GetMutableSubsystemChecked<UMassSignalSubsystem>();
@@ -141,7 +142,7 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 
 			TArray<FMCCollision> Collisions;
 
-			MCWorldSubsystem.RetrieveCollisions(Bounds, CollisionInformation.CollisionLayerIndex, [&](const FMassEntityHandle& OtherEntity)
+			MCWorldSubsystem.RetrieveCollisions(Bounds, CollisionLayer.CollisionLayerIndex, [&](const FMassEntityHandle& OtherEntity)
 			{
 				if (Entity == OtherEntity || !EntityManager.IsEntityValid(OtherEntity))
 				{
