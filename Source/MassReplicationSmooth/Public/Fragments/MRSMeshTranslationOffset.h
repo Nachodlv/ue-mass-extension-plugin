@@ -62,7 +62,7 @@ private:
 };
 
 USTRUCT()
-struct FMRSTranslateLocationTag : public FMassTag
+struct FMRSTranslateLocationToMassTag : public FMassTag
 {
 	GENERATED_BODY()
 };

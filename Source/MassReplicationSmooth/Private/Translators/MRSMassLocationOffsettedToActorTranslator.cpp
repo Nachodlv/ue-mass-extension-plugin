@@ -5,12 +5,12 @@
 #include "MassCommonTypes.h"
 #include "MassExecutionContext.h"
 #include "Fragments/MRSMeshTranslationOffset.h"
+#include "Translators/MassCharacterMovementTranslators.h"
 #include "Translators/MassSceneComponentLocationTranslator.h"
 
 UMRSMassLocationOffsettedTranslatorBase::UMRSMassLocationOffsettedTranslatorBase()
 {
 	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::All);
-	RequiredTags.Add<FMRSTranslateLocationTag>();
 }
 
 void UMRSMassLocationOffsettedTranslatorBase::ConfigureQueries()
@@ -30,6 +30,7 @@ void UMRSMassLocationOffsettedToActorTranslator::ConfigureQueries()
 {
 	Super::ConfigureQueries();
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
+	EntityQuery.AddTagRequirement<FMassCharacterMovementCopyToMassTag>(EMassFragmentPresence::None);
 	EntityQuery.RequireMutatingWorldAccess(); // due to mutating World by setting actor's location
 }
 
@@ -60,6 +61,7 @@ void UMRSActorToMassLocationOffsettedTranslator::ConfigureQueries()
 {
 	Super::ConfigureQueries();
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
+	EntityQuery.AddTagRequirement<FMassCharacterMovementCopyToMassTag>(EMassFragmentPresence::All);
 }
 
 void UMRSActorToMassLocationOffsettedTranslator::Execute(FMassEntityManager& EntityManager,

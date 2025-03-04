@@ -65,6 +65,7 @@ void UMRSSyncOffsetLocationTrait::BuildTemplate(FMassEntityTemplateBuildContext&
 
 	if (EnumHasAnyFlags(SyncDirection, EMassTranslationDirection::ActorToMass))
 	{
+		BuildContext.AddTag<FMRSTranslateLocationToMassTag>();
 		BuildContext.AddTranslator<UMRSActorToMassLocationOffsettedTranslator>();
 	}
 
