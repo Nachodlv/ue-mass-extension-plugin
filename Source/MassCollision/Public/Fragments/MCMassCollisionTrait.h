@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "MassEntityTraitBase.h"
 #include "MassEntityTypes.h"
-#include "UObject/Object.h"
 
 #include "MCMassCollisionTrait.generated.h"
 
@@ -22,6 +21,8 @@ struct FMCCollision
 	FMassEntityHandle OtherEntity;
 
 	FVector Normal;
+
+	bool operator==(const FMCCollision& Other) const { return OtherEntity == Other.OtherEntity; }
 };
 
 USTRUCT()
@@ -29,6 +30,13 @@ struct FMCCollisionsInformation : public FMassFragment
 {
 	GENERATED_BODY()
 
+	/** Collisions just added */
+	TArray<FMCCollision> NewCollisions;
+
+	/** Old collisions that are not present anymore */
+	TArray<FMCCollision> PreviousCollisions;
+
+	/** Current entity collisions */
 	TArray<FMCCollision> Collisions;
 };
 

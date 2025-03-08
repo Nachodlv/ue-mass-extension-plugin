@@ -39,8 +39,10 @@ void UMCCollisionObserver::ConfigureQueries()
 	AddCollisionQuery.AddRequirement<FAgentRadiusFragment>(EMassFragmentAccess::ReadOnly);
 	AddCollisionQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	AddCollisionQuery.AddTagRequirement<FMCCollidesTag>(EMassFragmentPresence::Optional);
+	AddCollisionQuery.AddRequirement<FMCCollisionsInformation>(EMassFragmentAccess::ReadWrite);
 	AddCollisionQuery.AddConstSharedRequirement<FMCCollisionLayer>();
 	AddCollisionQuery.AddSubsystemRequirement<UMCWorldSubsystem>(EMassFragmentAccess::ReadWrite);
+	AddCollisionQuery.AddSubsystemRequirement<UMassSignalSubsystem>(EMassFragmentAccess::ReadWrite);
 	AddCollisionQuery.RegisterWithProcessor(*this);
 }
 
@@ -50,9 +52,12 @@ void UMCCollisionObserver::Execute(FMassEntityManager& EntityManager, FMassExecu
 	{
 		const TConstArrayView<FAgentRadiusFragment> AgentRadiusFragments = InContext.GetFragmentView<FAgentRadiusFragment>();
 		const TConstArrayView<FTransformFragment> TransformFragments = InContext.GetFragmentView<FTransformFragment>();
+		const TArrayView<FMCCollisionsInformation> CollisionFragments = InContext.GetMutableFragmentView<FMCCollisionsInformation>();
 		const FMCCollisionLayer& CollisionLayer = InContext.GetConstSharedFragment<FMCCollisionLayer>();
 		UMCWorldSubsystem* MCWorldSubsystem = InContext.GetMutableSubsystem<UMCWorldSubsystem>();
 		const bool bShouldCollide = InContext.DoesArchetypeHaveTag<FMCCollidesTag>();
+
+		TArray<FMassEntityHandle> EntitiesWithOldCollisions;
 		
 		for (int32 i = 0; i < InContext.GetNumEntities(); ++i)
 		{
@@ -66,9 +71,23 @@ void UMCCollisionObserver::Execute(FMassEntityManager& EntityManager, FMassExecu
 			}
 			else
 			{
+				FMCCollisionsInformation& CollisionInfo = CollisionFragments[i];
+				CollisionInfo.PreviousCollisions = CollisionInfo.Collisions;
+				CollisionInfo.NewCollisions.Empty();
+				CollisionInfo.Collisions.Empty();
+				if (!CollisionInfo.PreviousCollisions.IsEmpty())
+				{
+					EntitiesWithOldCollisions.Add(Entity);
+				}
+				
 				MCWorldSubsystem->RemoveCollision(Entity);
 			}
-			
+		}
+
+		if (!EntitiesWithOldCollisions.IsEmpty())
+		{
+			UMassSignalSubsystem& SignalSubsystem = InContext.GetMutableSubsystemChecked<UMassSignalSubsystem>();
+			SignalSubsystem.SignalEntities(UMCCheckCollisionProcessor::CollisionStopSignal, EntitiesWithOldCollisions);
 		}
 	});
 }
@@ -82,7 +101,8 @@ void UMCCollisionObserver::Execute(FMassEntityManager& EntityManager, FMassExecu
 // Begin UMCCheckCollisionProcessor
 //
 
-FName UMCCheckCollisionProcessor::CollisionSignal = TEXT("UMCCheckCollisionProcessor_CollisionSignal");
+FName UMCCheckCollisionProcessor::CollisionStartSignal = TEXT("UMCCheckCollisionProcessor_CollisionStartSignal");
+FName UMCCheckCollisionProcessor::CollisionStopSignal = TEXT("UMCCheckCollisionProcessor_CollisionStopSignal");
 
 FName UMCCheckCollisionProcessor::CollisionGroup = TEXT("UMCCheckCollisionProcessor_CollisionGroup");
 
@@ -118,7 +138,8 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 		UMCWorldSubsystem& MCWorldSubsystem = Context.GetMutableSubsystemChecked<UMCWorldSubsystem>();
 		UMassSignalSubsystem& SignalSubsystem = Context.GetMutableSubsystemChecked<UMassSignalSubsystem>();
 
-		TArray<FMassEntityHandle> CollidedEntities;
+		TArray<FMassEntityHandle> EntitiesWithNewCollisions;
+		TArray<FMassEntityHandle> EntitiesWithRemovedCollisions;
 
 		for (int32 i = 0; i < Context.GetNumEntities(); ++i)
 		{
@@ -140,8 +161,7 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 				MCWorldSubsystem.UpdateCollision(Entity, Bounds, CellIDHint);
 			}
 
-			TArray<FMCCollision> Collisions;
-
+			TArray<FMCCollision> CurrentCollisions;
 			MCWorldSubsystem.RetrieveCollisions(Bounds, CollisionLayer.CollisionLayerIndex, [&](const FMassEntityHandle& OtherEntity)
 			{
 				if (Entity == OtherEntity || !EntityManager.IsEntityValid(OtherEntity))
@@ -158,22 +178,55 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 					return;
 				}
 				Direction = Direction.GetSafeNormal2D();
-				FMCCollision& Collision = Collisions.AddDefaulted_GetRef();
+				FMCCollision& Collision = CurrentCollisions.AddDefaulted_GetRef();
 				Collision.HitPoint = OtherEntityLocation + Direction.GetSafeNormal2D() * OtherEntityRadius;
 				Collision.OtherEntity = OtherEntity;
 				Collision.Normal = Direction;
 			});
-	
-			CollisionInformation.Collisions = Collisions;
-			if (Collisions.Num() > 0)
+
+			TArray<FMCCollision> NewCollisions;
+			CollisionInformation.PreviousCollisions.Reset();
+			CollisionInformation.NewCollisions = CurrentCollisions;
+			
+			for (int32 OldCollisionIndex = CollisionInformation.Collisions.Num() - 1; OldCollisionIndex >= 0; --OldCollisionIndex)
 			{
-				CollidedEntities.Add(Entity);
+				const FMCCollision& OldCollision = CollisionInformation.Collisions[OldCollisionIndex];
+				bool bCollisionStopped = true;
+				for (int32 NewCollisionIndex = CollisionInformation.NewCollisions.Num() - 1; NewCollisionIndex >= 0; --NewCollisionIndex)
+				{
+					FMCCollision& NewCollision = CollisionInformation.NewCollisions[NewCollisionIndex];
+					if (OldCollision.OtherEntity == NewCollision.OtherEntity)
+					{
+						bCollisionStopped = false;
+						CollisionInformation.NewCollisions.RemoveAt(NewCollisionIndex);
+						break;
+					}
+				}
+				if (bCollisionStopped)
+				{
+					CollisionInformation.PreviousCollisions.Add(OldCollision);
+				}
+			}
+			
+			CollisionInformation.Collisions = CurrentCollisions;
+	
+			if (CollisionInformation.NewCollisions.Num() > 0)
+			{
+				EntitiesWithNewCollisions.Add(Entity);
+			}
+			if (CollisionInformation.PreviousCollisions.Num() > 0)
+			{
+				EntitiesWithRemovedCollisions.Add(Entity);
 			}
 		}
 
-		if (!CollidedEntities.IsEmpty())
+		if (!EntitiesWithNewCollisions.IsEmpty())
 		{
-			SignalSubsystem.SignalEntities(CollisionSignal, CollidedEntities);
+			SignalSubsystem.SignalEntities(CollisionStartSignal, EntitiesWithNewCollisions);
+		}
+		if (!EntitiesWithRemovedCollisions.IsEmpty())
+		{
+			SignalSubsystem.SignalEntities(CollisionStopSignal, EntitiesWithRemovedCollisions);
 		}
 	});
 }

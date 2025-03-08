@@ -37,7 +37,10 @@ public:
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 
 	/** The signal name emitted when to entities collide with each other */
-	static FName CollisionSignal;
+	static FName CollisionStartSignal;
+	
+	/** The signal name emitted when to entities stop colliding with each other */
+	static FName CollisionStopSignal;
 
 	/** The processor group name */
 	static FName CollisionGroup;

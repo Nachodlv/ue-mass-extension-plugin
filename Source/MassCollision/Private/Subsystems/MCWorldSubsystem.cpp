@@ -167,7 +167,7 @@ void UMCWorldSubsystem::Tick(float DeltaTime)
 
 		if (const FMCCollisionsInformation* CollisionInformation = EntityManager.GetFragmentDataPtr<FMCCollisionsInformation>(CollisionData.Key))
 		{
-			for (const FMCCollision& Collision : CollisionInformation->Collisions)
+			for (const FMCCollision& Collision : CollisionInformation->NewCollisions)
 			{
 				DrawDebugPoint(GetWorld(), Collision.HitPoint, 10.0f, FColor::Blue, false, 3.0f);
 			}
