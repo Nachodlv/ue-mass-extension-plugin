@@ -59,31 +59,29 @@ bool UMCWorldSubsystem::HasCollision(const FMassEntityHandle& EntityHandle)
 	return EntityCollisionDataByMassID.Find(EntityHandle) != nullptr;
 }
 
-void UMCWorldSubsystem::AddCollision(const FMassEntityHandle& EntityHandle, const UE::Geometry::FAxisAlignedBox3d& Bounds, int32 CollisionLayerIndex)
+void UMCWorldSubsystem::AddCollision(const FMassEntityHandle& EntityHandle, const FBoxSphereBounds& Bounds, int32 CollisionLayerIndex)
 {
 	UE_MT_SCOPED_WRITE_ACCESS(OctreeAccessDetector);
 
 	static int32 OctreeIndex = 0;
-	CollisionOctree.InsertObject(OctreeIndex, Bounds);
-	EntityCollisionDataByMassID.Add(EntityHandle, FMCEntityCollisionData(1 << CollisionLayerIndex, OctreeIndex));
+	const UE::Geometry::FAxisAlignedBox3d AlignedBox (Bounds.Origin, Bounds.SphereRadius);
+	CollisionOctree.InsertObject(OctreeIndex, AlignedBox);
+	EntityCollisionDataByMassID.Add(EntityHandle, FMCEntityCollisionData(1 << CollisionLayerIndex, OctreeIndex, Bounds));
 	EntitiesByOctreeElementId.Add(OctreeIndex, EntityHandle);
 	++OctreeIndex;
 }
 
-bool UMCWorldSubsystem::NeedsCollisionUpdate(const FMassEntityHandle& EntityHandle,
-	const UE::Geometry::FAxisAlignedBox3d& NewBounds, uint32& CellIDOut)
-{
-	UE_MT_SCOPED_READ_ACCESS(OctreeAccessDetector);
-
-	return CollisionOctree.CheckIfObjectNeedsReinsert(EntityCollisionDataByMassID[EntityHandle].OctreeIndex, NewBounds, CellIDOut);
-}
-
-void UMCWorldSubsystem::UpdateCollision(const FMassEntityHandle& EntityHandle,
-	const UE::Geometry::FAxisAlignedBox3d& NewBounds, uint32 CellIDHint)
+void UMCWorldSubsystem::UpdateCollision(const FMassEntityHandle& EntityHandle, const FBoxSphereBounds& NewBounds)
 {
 	UE_MT_SCOPED_WRITE_ACCESS(OctreeAccessDetector);
-
-	CollisionOctree.ReinsertObject(EntityCollisionDataByMassID[EntityHandle].OctreeIndex, NewBounds, CellIDHint);
+	
+	EntityCollisionDataByMassID[EntityHandle].Bounds = NewBounds;
+	const UE::Geometry::FAxisAlignedBox3d AlignedBox (NewBounds.Origin, NewBounds.SphereRadius);
+	uint32 CellID;
+	if (CollisionOctree.CheckIfObjectNeedsReinsert(EntityCollisionDataByMassID[EntityHandle].OctreeIndex, AlignedBox, CellID))
+	{
+		CollisionOctree.ReinsertObject(EntityCollisionDataByMassID[EntityHandle].OctreeIndex, AlignedBox, CellID);
+	}
 }
 
 void UMCWorldSubsystem::RemoveCollision(const FMassEntityHandle& EntityHandle)
@@ -96,7 +94,7 @@ void UMCWorldSubsystem::RemoveCollision(const FMassEntityHandle& EntityHandle)
 	EntitiesByOctreeElementId.Remove(OctreeIndex);
 }
 
-void UMCWorldSubsystem::RetrieveCollisions(const UE::Geometry::FAxisAlignedBox3d& SearchBounds, int32 CollisionLayerIndex,
+void UMCWorldSubsystem::RetrieveCollisions(const FBoxSphereBounds& SearchBounds, int32 CollisionLayerIndex,
 	TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const
 {
 	UE_MT_SCOPED_READ_ACCESS(OctreeAccessDetector);
@@ -110,16 +108,23 @@ void UMCWorldSubsystem::RetrieveCollisions(const UE::Geometry::FAxisAlignedBox3d
 	RetrieveCollisionsByFlag(SearchBounds, CollisionFlag, ObjectIDFunc);
 }
 
-void UMCWorldSubsystem::RetrieveCollisionsByFlag(const UE::Geometry::FAxisAlignedBox3d& SearchBounds,
+void UMCWorldSubsystem::RetrieveCollisionsByFlag(const FBoxSphereBounds& SearchBounds,
 	uint8 CollisionFlag, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const
 {
-	CollisionOctree.RangeQuery(SearchBounds, [&ObjectIDFunc, this, &CollisionFlag](int32 ObjectID)
+	const UE::Geometry::FAxisAlignedBox3d AlignedBox (SearchBounds.Origin, SearchBounds.SphereRadius);
+	CollisionOctree.RangeQuery(AlignedBox, [&ObjectIDFunc, this, &CollisionFlag, &SearchBounds](int32 ObjectID)
 	{
 		const FMassEntityHandle& EntityHandle = EntitiesByOctreeElementId[ObjectID];
 		const FMCEntityCollisionData& EntityData = EntityCollisionDataByMassID.FindChecked(EntityHandle);
 		if (CollisionFlag & EntityData.CollisionLayerFlag)
 		{
-			ObjectIDFunc(EntityHandle);
+			if (FBoxSphereBounds::SpheresIntersect(EntityData.Bounds, SearchBounds))
+			{
+				if (FBoxSphereBounds::BoxesIntersect(EntityData.Bounds, SearchBounds))
+				{
+					ObjectIDFunc(EntityHandle);
+				}
+			}
 		}
 	});
 }
@@ -157,7 +162,7 @@ void UMCWorldSubsystem::Tick(float DeltaTime)
 		FTransformFragment* TransformFragment = EntityManager.GetFragmentDataPtr<FTransformFragment>(CollisionData.Key);
 		if (RadiusFragment && TransformFragment)
 		{
-			DrawDebugCircle(GetWorld(), TransformFragment->GetTransform().GetLocation(), RadiusFragment->Radius, 10, FColor::Red, false, -1.0f, 0, 0, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f));
+			DrawDebugCircle(GetWorld(),  CollisionData.Value.Bounds.Origin, CollisionData.Value.Bounds.SphereRadius, 10, FColor::Red, false, -1.0f, 0, 0, FVector(1.0f, 0.0f, 0.0f), FVector(0.0f, 1.0f, 0.0f));
 
 			if (FMCCollisionLayer* CollisionLayerFragment = EntityManager.GetConstSharedFragmentDataPtr<FMCCollisionLayer>(CollisionData.Key))
 			{

@@ -10,14 +10,16 @@
 
 struct FMCEntityCollisionData
 {
-	FMCEntityCollisionData (uint32 InCollisionLayerFlag, int32 InOctreeIndex)
-		: CollisionLayerFlag(InCollisionLayerFlag), OctreeIndex(InOctreeIndex) {}
+	FMCEntityCollisionData (uint32 InCollisionLayerFlag, int32 InOctreeIndex, const FBoxSphereBounds& InBounds)
+		: CollisionLayerFlag(InCollisionLayerFlag), OctreeIndex(InOctreeIndex), Bounds(InBounds) {}
 
 	/** The entity collision layer */
 	uint32 CollisionLayerFlag;
 
 	/** Object ID for this entity inside the octree */
 	int32 OctreeIndex = INDEX_NONE;
+
+	FBoxSphereBounds Bounds;
 };
 
 USTRUCT()
@@ -60,17 +62,15 @@ class MASSCOLLISION_API UMCWorldSubsystem : public UWorldSubsystem, public FTick
 public:
 	bool HasCollision(const FMassEntityHandle& EntityHandle);
 
-	void AddCollision(const FMassEntityHandle& EntityHandle, const UE::Geometry::FAxisAlignedBox3d& Bounds, int32 CollisionLayerIndex);
+	void AddCollision(const FMassEntityHandle& EntityHandle, const FBoxSphereBounds& Bounds, int32 CollisionLayerIndex);
 
-	bool NeedsCollisionUpdate(const FMassEntityHandle& EntityHandle, const UE::Geometry::FAxisAlignedBox3d& NewBounds, uint32& CellIDOut);
-
-	void UpdateCollision(const FMassEntityHandle& EntityHandle, const UE::Geometry::FAxisAlignedBox3d& NewBounds, uint32 CellIDHint = TNumericLimits<uint32>::Max());
+	void UpdateCollision(const FMassEntityHandle& EntityHandle, const FBoxSphereBounds& NewBounds);
 
 	void RemoveCollision(const FMassEntityHandle& EntityHandle);
 
-	void RetrieveCollisions(const UE::Geometry::FAxisAlignedBox3d& SearchBounds, int32 CollisionLayerIndex, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
+	void RetrieveCollisions(const FBoxSphereBounds& SearchBounds, int32 CollisionLayerIndex, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
 
-	void RetrieveCollisionsByFlag(const UE::Geometry::FAxisAlignedBox3d& SearchBounds, uint8 CollisionFlag, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
+	void RetrieveCollisionsByFlag(const FBoxSphereBounds& SearchBounds, uint8 CollisionFlag, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
 
 	virtual TStatId GetStatId() const override;
 

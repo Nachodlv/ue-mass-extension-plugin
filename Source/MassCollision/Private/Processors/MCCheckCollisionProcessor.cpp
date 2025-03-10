@@ -66,8 +66,8 @@ void UMCCollisionObserver::Execute(FMassEntityManager& EntityManager, FMassExecu
 			FMassEntityHandle Entity = InContext.GetEntity(i);
 			if (bShouldCollide && !MCWorldSubsystem->HasCollision(Entity))
 			{
-				UE::Geometry::FAxisAlignedBox3d Bounds (EntityLocation, AgentRadius);
-				MCWorldSubsystem->AddCollision(Entity, Bounds, CollisionLayer.CollisionLayerIndex);
+				FSphere Sphere (EntityLocation, AgentRadius);
+				MCWorldSubsystem->AddCollision(Entity, Sphere, CollisionLayer.CollisionLayerIndex);
 			}
 			else
 			{
@@ -153,13 +153,9 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 			{
 				continue;
 			}
-	
-			UE::Geometry::FAxisAlignedBox3d Bounds (AgentLocation, Radius);
-			uint32 CellIDHint;
-			if (MCWorldSubsystem.NeedsCollisionUpdate(Entity, Bounds, CellIDHint))
-			{
-				MCWorldSubsystem.UpdateCollision(Entity, Bounds, CellIDHint);
-			}
+			
+			FSphere Bounds (AgentLocation, Radius);
+			MCWorldSubsystem.UpdateCollision(Entity, Bounds);
 
 			TArray<FMCCollision> CurrentCollisions;
 			MCWorldSubsystem.RetrieveCollisions(Bounds, CollisionLayer.CollisionLayerIndex, [&](const FMassEntityHandle& OtherEntity)
@@ -171,15 +167,9 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 				const FMassEntityView OtherEntityView(EntityManager, OtherEntity);
 				const float OtherEntityRadius = OtherEntityView.GetFragmentData<FAgentRadiusFragment>().Radius;
 				const FVector OtherEntityLocation = OtherEntityView.GetFragmentData<FTransformFragment>().GetTransform().GetLocation();
-				FVector Direction = AgentLocation - OtherEntityLocation;
-				if (Direction.Size2D() > OtherEntityRadius + Radius)
-				{
-					// No collision
-					return;
-				}
-				Direction = Direction.GetSafeNormal2D();
+				const FVector Direction = (AgentLocation - OtherEntityLocation).GetSafeNormal2D();
 				FMCCollision& Collision = CurrentCollisions.AddDefaulted_GetRef();
-				Collision.HitPoint = OtherEntityLocation + Direction.GetSafeNormal2D() * OtherEntityRadius;
+				Collision.HitPoint = OtherEntityLocation + Direction * OtherEntityRadius;
 				Collision.OtherEntity = OtherEntity;
 				Collision.Normal = Direction;
 			});
