@@ -8,6 +8,16 @@
 // MC Includes
 #include "Subsystems/MCWorldSubsystem.h"
 
+TArray<FMassEntityHandle> FMCCollisionsInformation::ToMassEntityHandles(const TArray<FMCCollision>& Collisions)
+{
+	TArray<FMassEntityHandle> Result;
+	Algo::Transform(Collisions, Result, [](const FMCCollision& Collision)
+	{
+		return Collision.OtherEntity;
+	});
+	return Result;
+}
+
 void UMCMassCollisionTrait::BuildTemplate(FMassEntityTemplateBuildContext& BuildContext, const UWorld& World) const
 {
 	BuildContext.AddTag<FMCCollidesTag>();

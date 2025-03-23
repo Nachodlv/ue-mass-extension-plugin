@@ -164,6 +164,11 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 				{
 					return;
 				}
+				if (CollisionInformation.EntitiesToIgnore.Contains(OtherEntity))
+				{
+					return;
+				}
+				
 				const FMassEntityView OtherEntityView(EntityManager, OtherEntity);
 				const float OtherEntityRadius = OtherEntityView.GetFragmentData<FAgentRadiusFragment>().Radius;
 				const FVector OtherEntityLocation = OtherEntityView.GetFragmentData<FTransformFragment>().GetTransform().GetLocation();

@@ -26,7 +26,7 @@ struct FMCCollision
 };
 
 USTRUCT()
-struct FMCCollisionsInformation : public FMassFragment
+struct MASSCOLLISION_API FMCCollisionsInformation : public FMassFragment
 {
 	GENERATED_BODY()
 
@@ -38,6 +38,10 @@ struct FMCCollisionsInformation : public FMassFragment
 
 	/** Current entity collisions */
 	TArray<FMCCollision> Collisions;
+
+	TArray<FMassEntityHandle> EntitiesToIgnore;
+
+	static TArray<FMassEntityHandle> ToMassEntityHandles(const TArray<FMCCollision>& Collisions);
 };
 
 USTRUCT()
