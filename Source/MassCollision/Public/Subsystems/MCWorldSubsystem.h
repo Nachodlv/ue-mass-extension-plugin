@@ -71,6 +71,8 @@ public:
 	void RetrieveCollisions(const FBoxSphereBounds& SearchBounds, int32 CollisionLayerIndex, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
 
 	void RetrieveCollisionsByFlag(const FBoxSphereBounds& SearchBounds, uint8 CollisionFlag, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
+	
+	void RetrieveAllCollisionsByFlag(uint8 CollisionFlag, TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const;
 
 	virtual TStatId GetStatId() const override;
 

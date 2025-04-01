@@ -129,6 +129,18 @@ void UMCWorldSubsystem::RetrieveCollisionsByFlag(const FBoxSphereBounds& SearchB
 	});
 }
 
+void UMCWorldSubsystem::RetrieveAllCollisionsByFlag(uint8 CollisionFlag,
+	TFunctionRef<void(const FMassEntityHandle&)> ObjectIDFunc) const
+{
+	for (const auto& CollisionDataByMassID : EntityCollisionDataByMassID)
+	{
+		if (CollisionFlag & CollisionDataByMassID.Value.CollisionLayerFlag)
+		{
+			ObjectIDFunc(CollisionDataByMassID.Key);
+		}
+	}
+}
+
 TStatId UMCWorldSubsystem::GetStatId() const
 {
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UMCWorldSubsystem, STATGROUP_Tickables);
