@@ -16,7 +16,7 @@ public:
 
 	virtual void Register() override;
 
-	virtual void ConfigureQueries() override;
+	void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 	
@@ -32,7 +32,7 @@ class MASSCOLLISION_API UMCCheckCollisionProcessor : public UMassProcessor
 public:
 	UMCCheckCollisionProcessor();
 
-	virtual void ConfigureQueries() override;
+	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 

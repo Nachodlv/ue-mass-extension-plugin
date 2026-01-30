@@ -13,8 +13,9 @@ UMRSMassLocationOffsettedTranslatorBase::UMRSMassLocationOffsettedTranslatorBase
 	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::All);
 }
 
-void UMRSMassLocationOffsettedTranslatorBase::ConfigureQueries()
+void UMRSMassLocationOffsettedTranslatorBase::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
+	EntityQuery.Initialize(EntityManager);
 	AddRequiredTagsToQuery(EntityQuery);
 	EntityQuery.AddRequirement<FMassSceneComponentWrapperFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadOnly);
@@ -26,9 +27,9 @@ UMRSMassLocationOffsettedToActorTranslator::UMRSMassLocationOffsettedToActorTran
 	bRequiresGameThreadExecution = true;
 }
 
-void UMRSMassLocationOffsettedToActorTranslator::ConfigureQueries()
+void UMRSMassLocationOffsettedToActorTranslator::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
-	Super::ConfigureQueries();
+	EntityQuery.Initialize(EntityManager);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddTagRequirement<FMassCharacterMovementCopyToMassTag>(EMassFragmentPresence::None);
 	EntityQuery.RequireMutatingWorldAccess(); // due to mutating World by setting actor's location
@@ -57,9 +58,9 @@ void UMRSMassLocationOffsettedToActorTranslator::Execute(FMassEntityManager& Ent
 	});
 }
 
-void UMRSActorToMassLocationOffsettedTranslator::ConfigureQueries()
+void UMRSActorToMassLocationOffsettedTranslator::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
-	Super::ConfigureQueries();
+	Super::ConfigureQueries(EntityManager);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddTagRequirement<FMassCharacterMovementCopyToMassTag>(EMassFragmentPresence::All);
 }

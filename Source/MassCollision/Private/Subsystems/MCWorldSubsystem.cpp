@@ -196,6 +196,8 @@ void UMCWorldSubsystem::Tick(float DeltaTime)
 
 void UMCWorldSubsystem::PostInitialize()
 {
+	Super::PostInitialize();
+	
 	const UMCCollisionLayersSettings* LayerSettings = GetDefault<UMCCollisionLayersSettings>();
 	if (!ensure(LayerSettings) && ensure(LayerSettings->CollisionLayers.Num() < 8))
 	{

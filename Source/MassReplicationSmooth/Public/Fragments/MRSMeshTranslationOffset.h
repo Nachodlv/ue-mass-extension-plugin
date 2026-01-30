@@ -9,7 +9,7 @@
 
 /** Shared params to offset the entity mesh */
 USTRUCT()
-struct FMRSMeshOffsetParams : public FMassSharedFragment
+struct FMRSMeshOffsetParams : public FMassConstSharedFragment
 {
 	GENERATED_BODY()
 

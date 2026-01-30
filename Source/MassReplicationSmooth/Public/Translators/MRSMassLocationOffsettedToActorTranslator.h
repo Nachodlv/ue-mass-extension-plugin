@@ -13,7 +13,7 @@ class MASSREPLICATIONSMOOTH_API UMRSMassLocationOffsettedTranslatorBase : public
 public:
 	UMRSMassLocationOffsettedTranslatorBase();
 
-	virtual void ConfigureQueries() override;
+	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 
 protected:
 	FMassEntityQuery EntityQuery;
@@ -27,7 +27,7 @@ class MASSREPLICATIONSMOOTH_API UMRSMassLocationOffsettedToActorTranslator : pub
 public:
 	UMRSMassLocationOffsettedToActorTranslator();
 	
-	virtual void ConfigureQueries() override;
+	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 };
@@ -38,7 +38,7 @@ class MASSREPLICATIONSMOOTH_API UMRSActorToMassLocationOffsettedTranslator : pub
 	GENERATED_BODY()
 
 public:
-	virtual void ConfigureQueries() override;
+	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 };

@@ -19,8 +19,10 @@ UMRSSmoothMeshOffsetProcessor::UMRSSmoothMeshOffsetProcessor()
 	ExecutionOrder.ExecuteAfter.Add(UE::Mass::ProcessorGroupNames::Movement);
 }
 
-void UMRSSmoothMeshOffsetProcessor::ConfigureQueries()
+void UMRSSmoothMeshOffsetProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
+	EntityQuery.Initialize(EntityManager);
+	
 	EntityQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.AddConstSharedRequirement<FMRSMeshOffsetParams>();
 	EntityQuery.AddRequirement<FMassVelocityFragment>(EMassFragmentAccess::ReadOnly, EMassFragmentPresence::Optional);
@@ -70,10 +72,11 @@ void UMRSSmoothMeshOffsetProcessor::Execute(FMassEntityManager& EntityManager, F
 	});
 }
 
-void UMRSMassUpdateISMProcessor::ConfigureQueries()
+void UMRSMassUpdateISMProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
-	Super::ConfigureQueries();
+	Super::ConfigureQueries(EntityManager);
 	
+	EntityQuery.Initialize(EntityManager);
 	EntityQuery.AddRequirement<FMRSMeshTranslationOffset>(EMassFragmentAccess::ReadOnly, EMassFragmentPresence::Optional);
 }
 

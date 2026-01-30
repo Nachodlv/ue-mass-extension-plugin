@@ -34,8 +34,9 @@ void UMCCollisionObserver::Register()
 	ObserverRegistry.RegisterObserver(*FMCCollidesTag::StaticStruct(), EMassObservedOperation::Remove, GetClass());
 }
 
-void UMCCollisionObserver::ConfigureQueries()
+void UMCCollisionObserver::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
+	AddCollisionQuery.Initialize(EntityManager);
 	AddCollisionQuery.AddRequirement<FAgentRadiusFragment>(EMassFragmentAccess::ReadOnly);
 	AddCollisionQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	AddCollisionQuery.AddTagRequirement<FMCCollidesTag>(EMassFragmentPresence::Optional);
@@ -114,8 +115,9 @@ UMCCheckCollisionProcessor::UMCCheckCollisionProcessor()
 	ExecutionOrder.ExecuteBefore.Add(UE::Mass::ProcessorGroupNames::Movement);
 }
 
-void UMCCheckCollisionProcessor::ConfigureQueries()
+void UMCCheckCollisionProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
+	EntityQuery.Initialize(EntityManager);
 	EntityQuery.AddRequirement<FAgentRadiusFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FMCCollisionsInformation>(EMassFragmentAccess::ReadWrite);

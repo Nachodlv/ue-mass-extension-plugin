@@ -12,7 +12,6 @@ public class MassCollision : ModuleRules
                 "Core", 
                 "GeometryCore", 
                 "DeveloperSettings",
-                "StructUtils",
                 "MassEntity", 
                 "MassSpawner",
                 "MassCommon",

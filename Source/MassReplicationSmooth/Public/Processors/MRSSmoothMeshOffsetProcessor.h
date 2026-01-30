@@ -15,7 +15,7 @@ class MASSREPLICATIONSMOOTH_API UMRSSmoothMeshOffsetProcessor : public UMassProc
 public:
 	UMRSSmoothMeshOffsetProcessor();
 
-	virtual void ConfigureQueries() override;
+	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 
@@ -30,7 +30,7 @@ class UMRSMassUpdateISMProcessor : public UMassUpdateISMProcessor
 	GENERATED_BODY()
 
 protected:
-	virtual void ConfigureQueries() override;
+	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 	
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
 };

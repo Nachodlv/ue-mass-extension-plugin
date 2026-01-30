@@ -44,8 +44,17 @@ struct MASSCOLLISION_API FMCCollisionsInformation : public FMassFragment
 	static TArray<FMassEntityHandle> ToMassEntityHandles(const TArray<FMCCollision>& Collisions);
 };
 
+template<>
+struct TMassFragmentTraits<FMCCollisionsInformation> final
+{
+	enum
+	{
+		AuthorAcceptsItsNotTriviallyCopyable = true
+	};
+};
+
 USTRUCT()
-struct FMCCollisionLayer : public FMassSharedFragment
+struct FMCCollisionLayer : public FMassConstSharedFragment
 {
 	GENERATED_BODY()
 

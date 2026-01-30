@@ -12,8 +12,9 @@ UMRBMoveForwardObserver::UMRBMoveForwardObserver()
 	bAutoRegisterWithObserverRegistry = false;
 }
 
-void UMRBMoveForwardObserver::ConfigureQueries()
+void UMRBMoveForwardObserver::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
 {
+	EntityQuery.Initialize(EntityManager);
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
 	EntityQuery.AddRequirement<FMassVelocityFragment>(EMassFragmentAccess::ReadWrite);
 	EntityQuery.RegisterWithProcessor(*this);
