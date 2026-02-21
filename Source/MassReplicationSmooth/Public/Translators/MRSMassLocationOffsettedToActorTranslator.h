@@ -38,6 +38,8 @@ class MASSREPLICATIONSMOOTH_API UMRSActorToMassLocationOffsettedTranslator : pub
 	GENERATED_BODY()
 
 public:
+	UMRSActorToMassLocationOffsettedTranslator();
+	
 	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
 
 	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;

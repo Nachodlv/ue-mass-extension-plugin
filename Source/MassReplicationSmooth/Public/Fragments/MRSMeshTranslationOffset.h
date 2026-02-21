@@ -67,6 +67,12 @@ struct FMRSTranslateLocationToMassTag : public FMassTag
 	GENERATED_BODY()
 };
 
+USTRUCT()
+struct FMRSTranslateMassToLocationTag : public FMassTag
+{
+	GENERATED_BODY()
+};
+
 UCLASS()
 class UMRSSyncOffsetLocationTrait : public UMassAgentSyncTrait
 {
