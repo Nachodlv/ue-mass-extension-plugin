@@ -21,7 +21,7 @@ UMCCollisionObserver::UMCCollisionObserver()
 {
 	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::AllNetModes);
 	ObservedType = FAgentRadiusFragment::StaticStruct();
-	Operation = EMassObservedOperation::Add;
+	ObservedOperations = EMassObservedOperationFlags::AddElement;
 	ExecutionOrder.ExecuteBefore.Add(UMCCheckCollisionProcessor::CollisionGroup);
 }
 
@@ -49,7 +49,7 @@ void UMCCollisionObserver::ConfigureQueries(const TSharedRef<FMassEntityManager>
 
 void UMCCollisionObserver::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	AddCollisionQuery.ForEachEntityChunk(EntityManager, Context, [](FMassExecutionContext& InContext)
+	AddCollisionQuery.ForEachEntityChunk(Context, [](FMassExecutionContext& InContext)
 	{
 		const TConstArrayView<FAgentRadiusFragment> AgentRadiusFragments = InContext.GetFragmentView<FAgentRadiusFragment>();
 		const TConstArrayView<FTransformFragment> TransformFragments = InContext.GetFragmentView<FTransformFragment>();
@@ -130,7 +130,7 @@ void UMCCheckCollisionProcessor::ConfigureQueries(const TSharedRef<FMassEntityMa
 
 void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [&EntityManager](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(Context, [&EntityManager](FMassExecutionContext& Context)
 	{
 		const TConstArrayView<FAgentRadiusFragment> AgentRadiusFragments = Context.GetFragmentView<FAgentRadiusFragment>();
 		const TConstArrayView<FTransformFragment> TransformFragments = Context.GetFragmentView<FTransformFragment>();

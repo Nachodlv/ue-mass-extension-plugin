@@ -8,7 +8,7 @@ UMRBMoveForwardObserver::UMRBMoveForwardObserver()
 {
 	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::AllNetModes);
 	ObservedType = FMassVelocityFragment::StaticStruct();
-	Operation = EMassObservedOperation::Add;
+	ObservedOperations = EMassObservedOperationFlags::AddElement;
 	bAutoRegisterWithObserverRegistry = false;
 }
 
@@ -22,7 +22,7 @@ void UMRBMoveForwardObserver::ConfigureQueries(const TSharedRef<FMassEntityManag
 
 void UMRBMoveForwardObserver::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [ObserverSpeed = Speed](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(Context, [ObserverSpeed = Speed](FMassExecutionContext& Context)
 	{
 	   const TConstArrayView<FTransformFragment> TransformFragments = Context.GetFragmentView<FTransformFragment>();
 	   const TArrayView<FMassVelocityFragment> VelocityFragments = Context.GetMutableFragmentView<FMassVelocityFragment>();

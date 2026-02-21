@@ -40,7 +40,7 @@ void UMRSMassLocationOffsettedToActorTranslator::ConfigureQueries(const TSharedR
 void UMRSMassLocationOffsettedToActorTranslator::Execute(FMassEntityManager& EntityManager,
 	FMassExecutionContext& Context)
 {
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(Context, [this](FMassExecutionContext& Context)
 	{
 		const TConstArrayView<FMassSceneComponentWrapperFragment> ComponentList = Context.GetFragmentView<FMassSceneComponentWrapperFragment>();
 		const TConstArrayView<FTransformFragment> LocationList = Context.GetFragmentView<FTransformFragment>();
@@ -76,7 +76,7 @@ void UMRSActorToMassLocationOffsettedTranslator::ConfigureQueries(const TSharedR
 void UMRSActorToMassLocationOffsettedTranslator::Execute(FMassEntityManager& EntityManager,
 	FMassExecutionContext& Context)
 {
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [this](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(Context, [this](FMassExecutionContext& Context)
 {
 	const TConstArrayView<FMassSceneComponentWrapperFragment> ComponentList = Context.GetFragmentView<FMassSceneComponentWrapperFragment>();
 	const TArrayView<FTransformFragment> LocationList = Context.GetMutableFragmentView<FTransformFragment>();

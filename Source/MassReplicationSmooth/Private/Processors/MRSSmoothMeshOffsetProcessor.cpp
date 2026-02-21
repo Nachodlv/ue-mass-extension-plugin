@@ -31,7 +31,7 @@ void UMRSSmoothMeshOffsetProcessor::ConfigureQueries(const TSharedRef<FMassEntit
 
 void UMRSSmoothMeshOffsetProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(Context, [](FMassExecutionContext& Context)
 	{
 		const TArrayView<FMRSMeshTranslationOffset>& MeshOffsetList = Context.GetMutableFragmentView<FMRSMeshTranslationOffset>();
 		const TConstArrayView<FMassVelocityFragment> VelocityFragments = Context.GetFragmentView<FMassVelocityFragment>();
@@ -82,7 +82,7 @@ void UMRSMassUpdateISMProcessor::ConfigureQueries(const TSharedRef<FMassEntityMa
 
 void UMRSMassUpdateISMProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
 {
-	EntityQuery.ForEachEntityChunk(EntityManager, Context, [](FMassExecutionContext& Context)
+	EntityQuery.ForEachEntityChunk(Context, [](FMassExecutionContext& Context)
 	{
 		UMassRepresentationSubsystem* RepresentationSubsystem = Context.GetSharedFragment<FMassRepresentationSubsystemSharedFragment>().RepresentationSubsystem;
 		check(RepresentationSubsystem);
