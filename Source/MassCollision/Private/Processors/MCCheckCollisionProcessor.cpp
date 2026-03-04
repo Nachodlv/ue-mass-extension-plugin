@@ -21,7 +21,7 @@ UMCCollisionObserver::UMCCollisionObserver()
 {
 	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::AllNetModes);
 	ObservedType = FAgentRadiusFragment::StaticStruct();
-	ObservedOperations = EMassObservedOperationFlags::AddElement;
+	ObservedOperations = EMassObservedOperationFlags::CreateEntity | EMassObservedOperationFlags::AddElement;
 	ExecutionOrder.ExecuteBefore.Add(UMCCheckCollisionProcessor::CollisionGroup);
 }
 
@@ -113,6 +113,7 @@ UMCCheckCollisionProcessor::UMCCheckCollisionProcessor()
 	bAutoRegisterWithProcessingPhases = true;
 	ExecutionOrder.ExecuteInGroup = CollisionGroup;
 	ExecutionOrder.ExecuteBefore.Add(UE::Mass::ProcessorGroupNames::Movement);
+	// ProcessingPhase = EMassProcessingPhase::DuringPhysics;
 }
 
 void UMCCheckCollisionProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
@@ -182,30 +183,45 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 			});
 
 			TArray<FMCCollision> NewCollisions;
-			CollisionInformation.PreviousCollisions.Reset();
-			CollisionInformation.NewCollisions = CurrentCollisions;
-			
 			for (int32 OldCollisionIndex = CollisionInformation.Collisions.Num() - 1; OldCollisionIndex >= 0; --OldCollisionIndex)
 			{
 				const FMCCollision& OldCollision = CollisionInformation.Collisions[OldCollisionIndex];
 				bool bCollisionStopped = true;
-				for (int32 NewCollisionIndex = CollisionInformation.NewCollisions.Num() - 1; NewCollisionIndex >= 0; --NewCollisionIndex)
+				for (int32 NewCollisionIndex = CurrentCollisions.Num() - 1; NewCollisionIndex >= 0; --NewCollisionIndex)
 				{
-					FMCCollision& NewCollision = CollisionInformation.NewCollisions[NewCollisionIndex];
+					FMCCollision& NewCollision = CurrentCollisions[NewCollisionIndex];
 					if (OldCollision.OtherEntity == NewCollision.OtherEntity)
 					{
 						bCollisionStopped = false;
-						CollisionInformation.NewCollisions.RemoveAt(NewCollisionIndex);
+						CurrentCollisions.RemoveAt(NewCollisionIndex);
 						break;
 					}
 				}
 				if (bCollisionStopped)
 				{
 					CollisionInformation.PreviousCollisions.Add(OldCollision);
+					CollisionInformation.Collisions.RemoveAt(OldCollisionIndex);
 				}
 			}
 			
-			CollisionInformation.Collisions = CurrentCollisions;
+			
+			CollisionInformation.NewCollisions.Append(CurrentCollisions);
+			CollisionInformation.Collisions.Append(CurrentCollisions);
+			
+			for (const FMCCollision& NewCollision : CurrentCollisions)
+			{
+				if (FMCCollisionsInformation* OtherCollision = EntityManager.GetFragmentDataPtr<FMCCollisionsInformation>(NewCollision.OtherEntity))
+				{
+					FMCCollision Collision = NewCollision;
+					Collision.OtherEntity = Entity;
+					if (OtherCollision->Collisions.Find(Collision) == INDEX_NONE)
+					{
+						OtherCollision->Collisions.Add(Collision);
+						OtherCollision->NewCollisions.Add(Collision);
+						EntitiesWithNewCollisions.Add(NewCollision.OtherEntity);
+					}
+				}
+			}
 	
 			if (CollisionInformation.NewCollisions.Num() > 0)
 			{
@@ -231,3 +247,36 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 //
 // End UMCCheckCollisionProcessor
 //
+
+//
+// Start UMCCleanCollisionsProcessor
+//
+
+UMCCleanCollisionsProcessor::UMCCleanCollisionsProcessor()
+{
+	ExecutionFlags = static_cast<int32>(EProcessorExecutionFlags::AllNetModes);
+	bAutoRegisterWithProcessingPhases = true;
+	ExecutionOrder.ExecuteInGroup = UMCCheckCollisionProcessor::CollisionGroup;
+	ProcessingPhase = EMassProcessingPhase::FrameEnd;
+}
+
+void UMCCleanCollisionsProcessor::ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager)
+{
+	EntityQuery.Initialize(EntityManager);
+	EntityQuery.AddRequirement<FMCCollisionsInformation>(EMassFragmentAccess::ReadWrite);
+	EntityQuery.RegisterWithProcessor(*this);
+}
+
+void UMCCleanCollisionsProcessor::Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context)
+{
+	EntityQuery.ForEachEntityChunk(Context, [&EntityManager](FMassExecutionContext& Context)
+	{
+		const TArrayView<FMCCollisionsInformation> CollisionFragments = Context.GetMutableFragmentView<FMCCollisionsInformation>();
+		for (int32 i = 0; i < Context.GetNumEntities(); ++i)
+		{
+			FMCCollisionsInformation& CollisionInformation = CollisionFragments[i];
+			CollisionInformation.NewCollisions.Reset();
+			CollisionInformation.PreviousCollisions.Reset();
+		}
+	});
+}

@@ -48,3 +48,20 @@ public:
 private:
 	FMassEntityQuery EntityQuery;
 };
+
+
+UCLASS()
+class MASSCOLLISION_API UMCCleanCollisionsProcessor : public UMassProcessor
+{
+	GENERATED_BODY()
+
+public:
+	UMCCleanCollisionsProcessor();
+	
+	virtual void ConfigureQueries(const TSharedRef<FMassEntityManager>& EntityManager) override;
+
+	virtual void Execute(FMassEntityManager& EntityManager, FMassExecutionContext& Context) override;
+	
+private:
+	FMassEntityQuery EntityQuery;
+};
