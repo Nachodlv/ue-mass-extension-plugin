@@ -34,7 +34,7 @@ void UMRSMassLocationOffsettedToActorTranslator::ConfigureQueries(const TSharedR
 	Super::ConfigureQueries(EntityManager);
 	
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadOnly);
-	EntityQuery.AddTagRequirement<FMassCharacterMovementCopyToMassTag>(EMassFragmentPresence::None);
+	EntityQuery.RequireMutatingWorldAccess();
 }
 
 void UMRSMassLocationOffsettedToActorTranslator::Execute(FMassEntityManager& EntityManager,
@@ -70,7 +70,6 @@ void UMRSActorToMassLocationOffsettedTranslator::ConfigureQueries(const TSharedR
 	Super::ConfigureQueries(EntityManager);
 	
 	EntityQuery.AddRequirement<FTransformFragment>(EMassFragmentAccess::ReadWrite);
-	EntityQuery.AddTagRequirement<FMassCharacterMovementCopyToMassTag>(EMassFragmentPresence::All);
 }
 
 void UMRSActorToMassLocationOffsettedTranslator::Execute(FMassEntityManager& EntityManager,
