@@ -2,6 +2,7 @@
 
 // UE Includes
 #include "CoreMinimal.h"
+#include "MassEntityHandle.h"
 #include "MassEntityTypes.h"
 #include "Spatial/SparseDynamicOctree3.h"
 #include "Subsystems/WorldSubsystem.h"
