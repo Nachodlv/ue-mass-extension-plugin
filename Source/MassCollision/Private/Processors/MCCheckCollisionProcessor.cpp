@@ -179,7 +179,7 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 				FMCCollision& Collision = CurrentCollisions.AddDefaulted_GetRef();
 				Collision.HitPoint = OtherEntityLocation + Direction * OtherEntityRadius;
 				Collision.OtherEntity = OtherEntity;
-				Collision.Normal = Direction;
+				Collision.Normal = Direction * -1.0f;
 			});
 
 			TArray<FMCCollision> NewCollisions;
@@ -214,6 +214,7 @@ void UMCCheckCollisionProcessor::Execute(FMassEntityManager& EntityManager, FMas
 				{
 					FMCCollision Collision = NewCollision;
 					Collision.OtherEntity = Entity;
+					Collision.Normal = -Collision.Normal;
 					if (OtherCollision->Collisions.Find(Collision) == INDEX_NONE)
 					{
 						OtherCollision->Collisions.Add(Collision);
